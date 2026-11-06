@@ -171,7 +171,11 @@ export function PreferencesEditor({ deputies }: { deputies: Deputy[] }) {
         headers: { "content-type": "application/json" },
         body: JSON.stringify({ email }),
       });
-      const body = (await response.json()) as { ok?: boolean; delivery?: Delivery };
+      const body = (await response.json()) as {
+        ok?: boolean;
+        delivery?: Delivery;
+        message?: string;
+      };
       if (response.ok && body.ok && body.delivery === "enviado") {
         clearPreferences();
         setDeletion({ kind: "pedido", email });
@@ -179,7 +183,9 @@ export function PreferencesEditor({ deputies }: { deputies: Deputy[] }) {
         setDeletion({
           kind: "erro",
           message:
-            body.delivery === "sem-provedor"
+            response.status === 429 && body.message
+              ? `${body.message} Nada foi apagado.`
+              : body.delivery === "sem-provedor"
               ? "O envio de e-mail não está configurado, então o link para apagar os dados do servidor não pôde ser enviado. Nada foi apagado."
               : "O e-mail com o link não saiu. Nada foi apagado; tente de novo em alguns minutos.",
         });

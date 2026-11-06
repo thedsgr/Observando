@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { hasServiceDb } from "@/lib/db/client";
+import { RATE_LIMITED_MESSAGE, allowEmailRequest } from "@/lib/db/rate-limit";
 import { TOKEN_TTL_HOURS, requestDeletion } from "@/lib/db/subscriptions";
 import { deletionMessage } from "@/lib/email/messages";
 import { hasEmailProvider, sendEmail, siteUrl } from "@/lib/email/send";
@@ -20,6 +21,15 @@ export async function POST(request: Request) {
   const email = typeof body.email === "string" ? body.email : "";
   if (!isValidEmail(email)) {
     return NextResponse.json({ error: "email-invalido" }, { status: 400 });
+  }
+
+  // Vale para qualquer endereço, inscrito ou não, então a recusa não diz
+  // nada sobre quem usa o Observando.
+  if (!(await allowEmailRequest(request, [email.trim().toLowerCase()]))) {
+    return NextResponse.json(
+      { error: "muitos-pedidos", message: RATE_LIMITED_MESSAGE },
+      { status: 429 },
+    );
   }
 
   const pending = await requestDeletion(email);

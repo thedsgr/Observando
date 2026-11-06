@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { hasServiceDb } from "@/lib/db/client";
+import { RATE_LIMITED_MESSAGE, allowEmailRequest } from "@/lib/db/rate-limit";
 import {
   TOKEN_TTL_HOURS,
   requestDeletion,
@@ -76,6 +77,20 @@ export async function POST(request: Request) {
       ) as TopicId[])
     : [];
 
+  const previous =
+    typeof body.previousEmail === "string" ? body.previousEmail.trim().toLowerCase() : "";
+
+  // Conta também o endereço antigo: ele recebe mensagem, e sem isso daria
+  // para encher a caixa de alguém passando-o como `previousEmail`.
+  const addresses = [email.trim().toLowerCase()];
+  if (isValidEmail(previous)) addresses.push(previous);
+  if (!(await allowEmailRequest(request, addresses))) {
+    return NextResponse.json(
+      { error: "muitos-pedidos", message: RATE_LIMITED_MESSAGE },
+      { status: 429 },
+    );
+  }
+
   try {
     const result = await upsertSubscription({ email, frequency, legislators, topics });
 
@@ -106,8 +121,6 @@ export async function POST(request: Request) {
     // Troca de e-mail: o endereço antigo recebe um link para encerrar a
     // inscrição dele. Só o clique encerra — ver `emailChangeMessage`. Sem
     // inscrição no antigo, nada sai, e a resposta é a mesma.
-    const previous =
-      typeof body.previousEmail === "string" ? body.previousEmail.trim().toLowerCase() : "";
     if (isValidEmail(previous) && previous !== result.address) {
       const pending = await requestDeletion(previous);
       if (pending) {
