@@ -2,10 +2,10 @@
 /**
  * Sincroniza as votações de um ano dos arquivos anuais da Câmara para o banco.
  *
- * Por que existe: hoje as votações são lidas dos arquivos a cada revalidação e
- * nunca passam pelo banco. Sem elas gravadas não há como gerar notificação com
+ * Por que existe: sem as votações gravadas não há como gerar notificação com
  * `dedup_key` (PRD §8.3) — não se consegue dizer "já avisei sobre esta
- * votação" sobre algo que não está persistido.
+ * votação" sobre algo que não está persistido. Ao final, gera as notificações
+ * das votações que acabaram de chegar.
  *
  * Reusa `src/lib/camara/bulk-source.ts` em vez de reimplementar a leitura e a
  * classificação. Se o script tivesse a sua própria, haveria duas respostas
@@ -369,6 +369,20 @@ async function main() {
       }
     }
     await upsertAll(db, "voting_topics", votingTopics, "voting_id,topic_id");
+
+    // --- notificações -------------------------------------------------------
+    // Depois de tudo gravado, e não antes: a regra de tema precisa dos
+    // vínculos de tema, e a de registro precisa dos votos. A função ignora o
+    // que já foi gerado, então rodar a sincronização de novo não reenvia nada.
+    // `first_seen_at` fica de fora do upsert de votações de propósito — é ele
+    // que diz o que é novidade, e reescrevê-lo faria tudo parecer novo.
+    const { data: criadas, error: notificationError } = await db.rpc(
+      "generate_notifications",
+    );
+    if (notificationError) {
+      throw new Error(`notificações: ${notificationError.message}`);
+    }
+    console.log(`  ${criadas ?? 0} notificações novas`);
 
     await db
       .from("sync_runs")

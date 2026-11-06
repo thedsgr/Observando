@@ -45,6 +45,11 @@ registra cada execução em `sync_runs`. Para antes de gravar se muitas votaçõ
 nominais aparecerem sem voto individual no arquivo: isso indica download
 truncado, e gravar faria a interface dizer "sem registro" sobre voto real.
 
+Ao final, a sincronização chama `generate_notifications()`, que cria em
+`notifications` uma linha por (assinante, votação) que merece aviso. Não envia
+nada — só deixa pendente, com `scheduled_for` conforme a frequência (imediato;
+diário às 8h; semanal na segunda às 8h, horário de Brasília).
+
 Deputados que votaram mas não estão mais em exercício — suplentes, quem saiu
 no meio da legislatura — entram em `legislators` com `in_office = false`.
 Descartar os votos deles apagaria voto real.
@@ -195,6 +200,18 @@ fora da tabela não geram categoria: a votação fica sem tema até revisão.
   leitura, pelo fuso nomeado (o Brasil teve horário de verão até 2019). Sem
   isso, numa máquina em Brasília tudo parece certo por coincidência, e num
   servidor em UTC todo horário sai três horas adiantado.
+- **Aviso só sobre o que é novidade para a pessoa.** Uma votação gera aviso
+  se chegou ao banco (`first_seen_at`) depois que o canal foi confirmado, e se
+  aconteceu nos últimos 14 dias. Sem a primeira regra, quem se inscreve hoje
+  receberia o ano inteiro; sem a segunda, carregar um ano antigo apareceria
+  como novidade para todo mundo. `first_seen_at` fica fora do upsert de
+  propósito: reescrevê-lo faria tudo parecer novo.
+- **Um aviso por votação, não por parlamentar.** Quem acompanha três deputados
+  que votaram na mesma coisa recebe uma mensagem (PRD §8.3). `dedup_key` é
+  único no banco, então reprocessar não reenvia.
+- **Sem registro de voto, sem aviso.** "Seu deputado não tem registro" não é
+  notícia, e o §8.1 proíbe tratar ausência como falta. Voto em branco gera
+  aviso: o registro existe.
 - **Voto com valor em branco é registro, não ausência.** A fonte tem 466 deles
   em 2026; comparações usam `!== undefined`, nunca truthiness.
 
@@ -204,17 +221,22 @@ fora da tabela não geram categoria: a votação fica sem tema até revisão.
    as três variáveis preenchidas nada sai, e a interface distingue "não está
    configurado" de "o envio falhou" em vez de dizer que mandou. Em
    desenvolvimento o link aparece no log do servidor, nunca na resposta.
-2. **Gerar as notificações.** As votações já estão no banco; falta o passo que,
-   a cada sincronização, cruza votos novos com quem acompanha cada parlamentar
-   e cria as linhas em `notifications`, com `dedup_key` para não reenviar
-   evento antigo como novo (PRD §8.3). A sincronização também precisa de
-   agendamento — hoje roda à mão.
-3. **O painel ainda lê dos arquivos, não do banco.** Funciona, e o banco agora
+2. **Enviar as notificações.** Elas são geradas e ficam pendentes; falta o
+   passo que lê as vencidas, monta a mensagem com os votos dos parlamentares
+   acompanhados (agrupando por pessoa no diário e no semanal) e envia. A
+   sincronização também precisa de agendamento — hoje roda à mão.
+3. **Filtro de tema no aviso deixa passar muito.** Votação sem tema passa por
+   qualquer filtro, como no painel. No painel isso é certo — esconder voto real
+   por falha de classificação engana. No aviso o efeito é outro: num teste,
+   quem escolheu só "saúde" recebeu 23 avisos de 127, e 16 deles passaram só
+   por não ter tema. 24 das 159 nominais de 2026 não têm tema. É decisão de
+   produto se o aviso deve seguir a regra do painel.
+4. **O painel ainda lê dos arquivos, não do banco.** Funciona, e o banco agora
    tem os mesmos dados; trocar a fonte é outro passo.
-4. **Tela de preferências ligada ao banco.** Hoje `/preferencias` edita o
+5. **Tela de preferências ligada ao banco.** Hoje `/preferencias` edita o
    armazenamento do navegador. Ligá-la à inscrição confirmada pede um token de
    `manage`, que o esquema já prevê mas ninguém emite ainda.
-5. **Token pendente de quem nunca confirmou não é invalidado** por um pedido
+6. **Token pendente de quem nunca confirmou não é invalidado** por um pedido
    novo para o mesmo endereço. Não expõe nada de ninguém — o canal nunca foi
    confirmado e nada é enviado antes disso — mas quem clicar num link antigo
    confirma as escolhas do pedido mais recente, não as suas.
