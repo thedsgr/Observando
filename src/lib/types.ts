@@ -1,5 +1,5 @@
 /* =========================================================================
-   Modelo de domínio do Observa.
+   Modelo de domínio do Observando.
 
    Os tipos existem para tornar difícil violar as regras do PRD §8.1, e foram
    revistos na Fase 2 contra o que a API da Câmara realmente entrega:
@@ -127,7 +127,7 @@ export type Voting = {
   topics: TopicAssignment[];
   /** Recurso oficial correspondente a esta votação na API de Dados Abertos. */
   sourceUrl: string;
-  /** Quando o Observa leu este registro da fonte. */
+  /** Quando o Observando leu este registro da fonte. */
   syncedAt: string;
 };
 

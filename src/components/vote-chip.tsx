@@ -36,7 +36,7 @@ export function VoteChip({ lookup }: { lookup: VoteLookup }) {
     return (
       <span
         className="inline-flex items-center gap-1.5 rounded-full border border-dashed border-flag/50 px-2.5 py-0.5 text-xs text-flag"
-        title="A fonte registrou um voto para este parlamentar, mas sem valor. Não é ausência de registro, e o Observa não atribui um valor que a fonte não deu."
+        title="A fonte registrou um voto para este parlamentar, mas sem valor. Não é ausência de registro, e o Observando não atribui um valor que a fonte não deu."
       >
         <VoteMarker marker="dashed" color="var(--flag)" />
         Valor não informado

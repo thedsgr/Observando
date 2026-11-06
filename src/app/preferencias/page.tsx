@@ -4,7 +4,7 @@ import { FeedSkeleton } from "@/components/states";
 import { fetchDeputies } from "@/lib/db/feed";
 
 export const metadata = {
-  title: "Preferências — Observa",
+  title: "Preferências — Observando",
 };
 
 async function EditorData() {

@@ -126,7 +126,7 @@ export async function POST(request: Request) {
 
     // `delivery` descreve o envio, nunca o assinante: endereço novo, pendente
     // e já confirmado respondem igual. Dizer qual é o caso deixaria sondar
-    // quem usa o Observa — era o que `alreadyVerified` fazia antes de sair.
+    // quem usa o Observando — era o que `alreadyVerified` fazia antes de sair.
     return NextResponse.json({
       ok: true,
       emailSent: sent.status === "enviado",

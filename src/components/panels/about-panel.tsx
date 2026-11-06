@@ -33,7 +33,7 @@ export function AboutPanel({ onOpenSearch }: { onOpenSearch?: () => void }) {
         <li>
           Boa parte das votações da Câmara sai{" "}
           <strong className="font-medium text-text">sem voto individual publicado</strong>.
-          Nesses casos o Observa não atribui voto a ninguém, e também não afirma
+          Nesses casos o Observando não atribui voto a ninguém, e também não afirma
           que a votação foi simbólica.
         </li>
         <li>

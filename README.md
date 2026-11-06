@@ -1,4 +1,4 @@
-# Observa
+# Observando
 
 Aplicação web de transparência cívica: o cidadão escolhe deputados federais e
 temas de interesse e acompanha como esses parlamentares votam, com contexto e
@@ -15,7 +15,7 @@ fonte oficial. Ver `docs/prd.md` para a proposta de produto completa.
 
 ## Para rodar com banco
 
-O projeto Supabase **Observa** já existe (organização `My Dashs`, região
+O projeto Supabase **Observando** já existe (organização `My Dashs`, região
 `sa-east-1`) e as migrações de `supabase/migrations/` já foram aplicadas nele.
 
 ```bash
@@ -159,7 +159,7 @@ reler antes de mexer na camada de dados.
 ## Classificação temática
 
 Vem do cadastro oficial da proposição (`/proposicoes/{id}/temas`), nunca de IA.
-A Câmara tem 32 temas e o Observa tem 13 categorias, mais "Outros"; o
+A Câmara tem 32 temas e o Observando tem 13 categorias, mais "Outros"; o
 mapeamento está em `src/lib/camara/topic-map.ts`, com confiança `alta` para
 correspondência direta e `media` quando o tema oficial é mais amplo que a
 categoria. Quando nenhum tema oficial da proposição corresponde a uma

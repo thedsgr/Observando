@@ -67,7 +67,7 @@ function wrap(parts: { heading: string; body: string }): string {
   return [
     '<div style="font-family:-apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif;',
     'max-width:560px;margin:0 auto;padding:32px 24px;color:#1a1a1a;font-size:15px;line-height:1.6">',
-    '<p style="margin:0 0 24px;font-size:17px">Observa</p>',
+    '<p style="margin:0 0 24px;font-size:17px">Observando</p>',
     `<h1 style="margin:0 0 16px;font-size:21px;line-height:1.3">${parts.heading}</h1>`,
     parts.body,
     "</div>",
@@ -122,7 +122,7 @@ export function verifyMessage(context: MessageContext): EmailMessage {
  */
 export function applyMessage(context: MessageContext): EmailMessage {
   const text = [
-    "Pediram para mudar o que você acompanha no Observa para:",
+    "Pediram para mudar o que você acompanha no Observando para:",
     "",
     summaryText(context),
     "",
@@ -138,7 +138,7 @@ export function applyMessage(context: MessageContext): EmailMessage {
   const html = wrap({
     heading: "Confirme a mudança nas suas escolhas",
     body: [
-      '<p style="margin:0 0 12px">Pediram para mudar o que você acompanha no Observa para:</p>',
+      '<p style="margin:0 0 12px">Pediram para mudar o que você acompanha no Observando para:</p>',
       summaryHtml(context),
       button(context.url, "Confirmar a mudança"),
       `<p style="margin:0 0 20px;font-size:13px;color:#666">O link vale por ${context.ttlHours} horas.</p>`,
@@ -170,7 +170,7 @@ export function deletionMessage(context: {
   const apagado =
     "seu e-mail, os parlamentares e temas que você escolheu, a frequência e o histórico de avisos";
   const text = [
-    "Pediram para apagar os seus dados do Observa.",
+    "Pediram para apagar os seus dados do Observando.",
     "",
     `Se foi você, confirme neste link. Serão apagados ${apagado}:`,
     context.url,
@@ -184,7 +184,7 @@ export function deletionMessage(context: {
   const html = wrap({
     heading: "Confirme a exclusão dos seus dados",
     body: [
-      '<p style="margin:0 0 12px">Pediram para apagar os seus dados do Observa.</p>',
+      '<p style="margin:0 0 12px">Pediram para apagar os seus dados do Observando.</p>',
       `<p style="margin:0 0 16px">Se foi você, confirme no botão abaixo. Serão apagados ${apagado}.</p>`,
       button(context.url, "Apagar meus dados"),
       `<p style="margin:0 0 20px;font-size:13px;color:#666">O link vale por ${context.ttlHours} horas. `,
@@ -211,7 +211,7 @@ export function emailChangeMessage(context: {
   ttlHours: number;
 }): EmailMessage {
   const text = [
-    "Pediram para mudar o e-mail que recebe os avisos do Observa para outro",
+    "Pediram para mudar o e-mail que recebe os avisos do Observando para outro",
     "endereço.",
     "",
     "Se foi você, confirme neste link para este endereço parar de receber. A",
@@ -227,7 +227,7 @@ export function emailChangeMessage(context: {
   const html = wrap({
     heading: "Parar os avisos neste endereço?",
     body: [
-      '<p style="margin:0 0 12px">Pediram para mudar o e-mail que recebe os avisos do Observa para outro endereço.</p>',
+      '<p style="margin:0 0 12px">Pediram para mudar o e-mail que recebe os avisos do Observando para outro endereço.</p>',
       '<p style="margin:0 0 16px">Se foi você, confirme no botão abaixo para este endereço parar de receber. A inscrição dele (o e-mail, as escolhas e o histórico de avisos) é apagada.</p>',
       button(context.url, "Parar os avisos aqui"),
       `<p style="margin:0 0 20px;font-size:13px;color:#666">O link vale por ${context.ttlHours} horas. `,
@@ -363,7 +363,7 @@ export function digestMessage(context: DigestContext): EmailMessage {
       : `${items.length} votações dos parlamentares que você acompanha`;
 
   const footerText = [
-    "Você recebe este e-mail porque escolheu acompanhar esses parlamentares no Observa.",
+    "Você recebe este e-mail porque escolheu acompanhar esses parlamentares no Observando.",
     `Para mudar quem você acompanha, refaça a inscrição em ${context.siteUrl}`,
     `Para parar de receber: ${context.unsubscribeUrl}`,
   ].join("\n");
@@ -382,7 +382,7 @@ export function digestMessage(context: DigestContext): EmailMessage {
     body: [
       ...items.map(itemHtml),
       '<div style="border-top:1px solid #e5e5e5;padding-top:20px;font-size:13px;color:#666">',
-      "<p style=\"margin:0 0 8px\">Você recebe este e-mail porque escolheu acompanhar esses parlamentares no Observa.</p>",
+      "<p style=\"margin:0 0 8px\">Você recebe este e-mail porque escolheu acompanhar esses parlamentares no Observando.</p>",
       `<p style="margin:0 0 8px"><a href="${escapeHtml(context.siteUrl)}" style="color:#666">Mudar quem você acompanha</a></p>`,
       `<p style="margin:0"><a href="${escapeHtml(context.unsubscribeUrl)}" style="color:#666">Parar de receber</a></p>`,
       "</div>",

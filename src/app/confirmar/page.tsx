@@ -1,8 +1,9 @@
 import Link from "next/link";
 import { confirmToken, type Confirmation } from "@/lib/db/subscriptions";
 import { hasServiceDb } from "@/lib/db/client";
+import { Logo } from "@/components/ui/logo";
 
-export const metadata = { title: "Confirmação — Observa" };
+export const metadata = { title: "Confirmação — Observando" };
 
 /**
  * Destino do link mágico. O clique é o que autoriza: confirma o canal no
@@ -42,7 +43,9 @@ export default async function Page({
 
   return (
     <main className="mx-auto w-full max-w-xl flex-1 px-4 py-16 sm:px-6">
-      <p className="font-serif text-lg text-text">Observa</p>
+      <p>
+        <Logo />
+      </p>
       <h1 className="mt-5 font-serif text-3xl leading-tight text-text">
         {copy.title}
       </h1>

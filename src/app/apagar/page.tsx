@@ -1,6 +1,7 @@
 import Link from "next/link";
+import { Logo } from "@/components/ui/logo";
 
-export const metadata = { title: "Apagar meus dados — Observa" };
+export const metadata = { title: "Apagar meus dados — Observando" };
 
 /** Destino do link de exclusão. Não apaga ao abrir — só mostra o botão. */
 export default async function Page({
@@ -34,7 +35,7 @@ export default async function Page({
     : feito
     ? [
         "Seus dados foram apagados",
-        "Seu e-mail, suas escolhas e o histórico de avisos não existem mais no Observa. Se quiser voltar a acompanhar alguém, é só se inscrever de novo.",
+        "Seu e-mail, suas escolhas e o histórico de avisos não existem mais no Observando. Se quiser voltar a acompanhar alguém, é só se inscrever de novo.",
       ]
     : erro || !t
       ? [
@@ -50,7 +51,9 @@ export default async function Page({
 
   return (
     <main className="mx-auto w-full max-w-xl flex-1 px-4 py-16 sm:px-6">
-      <p className="font-serif text-lg text-text">Observa</p>
+      <p>
+        <Logo />
+      </p>
       <h1 className="mt-5 font-serif text-3xl leading-tight text-text">{title}</h1>
       <p className="mt-3 text-[15px] leading-relaxed text-text-muted">{body}</p>
       {!feito && !erro && t ? (

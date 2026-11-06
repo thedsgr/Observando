@@ -15,6 +15,7 @@ import {
 import { savePreferences } from "@/lib/preferences-store";
 import { searchDeputies } from "@/lib/view";
 import type { Deputy, TopicId } from "@/lib/types";
+import { Logo } from "@/components/ui/logo";
 
 /**
  * Onboarding em três passos: quem acompanhar, sobre o quê, e como ser avisado.
@@ -100,7 +101,9 @@ export function Onboarding({ deputies }: { deputies: Deputy[] }) {
   return (
     <main className="mx-auto flex w-full max-w-2xl flex-1 flex-col px-4 py-10 sm:px-6 sm:py-16">
       <header>
-        <p className="font-serif text-lg text-text">Observa</p>
+        <p>
+          <Logo />
+        </p>
         <h1 className="mt-5 font-serif text-3xl leading-tight text-text sm:text-4xl">
           Você votou neles. Agora acompanhe o que eles votam.
         </h1>
@@ -226,7 +229,7 @@ function StepDone({
 
   // A cópia daqui serve a três casos — endereço novo, endereço pendente e
   // endereço já confirmado — porque a API não diz qual foi. Dizer revelaria
-  // quem usa o Observa a quem digitasse um e-mail alheio.
+  // quem usa o Observando a quem digitasse um e-mail alheio.
   const inscrito = outcome.status === "inscrito";
   const delivery = outcome.status === "inscrito" ? outcome.delivery : null;
 
@@ -485,7 +488,7 @@ function StepChannel({
     <section>
       <h2 className="text-xl text-text">Como você quer ser avisado?</h2>
       <p className="mt-2 text-[15px] leading-relaxed text-text-muted">
-        Por enquanto o Observa avisa por e-mail. SMS e WhatsApp vêm depois.
+        Por enquanto o Observando avisa por e-mail. SMS e WhatsApp vêm depois.
       </p>
 
       <label className="mt-5 block">

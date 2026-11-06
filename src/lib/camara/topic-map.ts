@@ -4,7 +4,7 @@ import type { Confidence, TopicAssignment, TopicId } from "@/lib/types";
 /**
  * Mapeamento dos temas oficiais da Câmara para a taxonomia do produto.
  *
- * A Câmara tem 32 temas (`/referencias/proposicoes/codTema`) e o Observa tem
+ * A Câmara tem 32 temas (`/referencias/proposicoes/codTema`) e o Observando tem
  * 13 categorias. O PRD §8.2 manda priorizar metadado oficial e regra
  * determinística, então a classificação sai inteiramente desta tabela — não há
  * IA envolvida.

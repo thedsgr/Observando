@@ -342,7 +342,7 @@ export function Dashboard({
             >
               Dados Abertos da Câmara dos Deputados
             </a>
-            . O Observa não altera registros oficiais.
+            . O Observando não altera registros oficiais.
           </p>
           <p className="flex items-center gap-3">
             <span>

@@ -59,7 +59,7 @@ export function ErrorState({
     >
       <p className="text-sm text-flag">Não foi possível carregar os dados</p>
       <p className="mx-auto mt-2 max-w-md text-sm leading-relaxed text-text-muted">
-        {description} Enquanto isso, o Observa não exibe votações parciais nem
+        {description} Enquanto isso, o Observando não exibe votações parciais nem
         estimadas.
       </p>
       {onRetry && (

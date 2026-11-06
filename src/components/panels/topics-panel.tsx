@@ -78,7 +78,7 @@ export function TopicsPanel({
 
       <p className="mt-4 border-t border-border-subtle pt-3 text-[12px] leading-relaxed text-text-dim">
         Os temas vêm do cadastro oficial da proposição na Câmara, mapeado para
-        as categorias do Observa. O ponto âmbar marca temas oficiais mais amplos
+        as categorias do Observando. O ponto âmbar marca temas oficiais mais amplos
         que a categoria, que ainda precisam de confirmação.
       </p>
     </Panel>

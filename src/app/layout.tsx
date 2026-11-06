@@ -20,7 +20,7 @@ const sourceSerif = Source_Serif_4({
 });
 
 export const metadata: Metadata = {
-  title: "Observa — acompanhe como seus deputados votam",
+  title: "Observando — acompanhe como seus deputados votam",
   description:
     "Você votou neles. Agora acompanhe o que eles votam. Votações da Câmara dos Deputados em linguagem clara, sempre com a fonte oficial.",
 };

@@ -50,7 +50,7 @@ export function CoveragePanel({
     {
       label: "Em Outros",
       value: stats.withoutTopic,
-      note: "nenhum tema oficial corresponde às categorias do Observa",
+      note: "nenhum tema oficial corresponde às categorias do Observando",
     },
     {
       label: "Sem proposição",

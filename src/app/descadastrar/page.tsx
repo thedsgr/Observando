@@ -1,6 +1,7 @@
 import Link from "next/link";
+import { Logo } from "@/components/ui/logo";
 
-export const metadata = { title: "Parar de receber — Observa" };
+export const metadata = { title: "Parar de receber — Observando" };
 
 /**
  * Página de destino do link de descadastro. Não descadastra ao abrir — ver o
@@ -25,12 +26,14 @@ export default async function Page({
         ]
       : [
           "Parar de receber avisos?",
-          "Você deixa de receber os e-mails do Observa sobre as votações dos parlamentares que acompanha.",
+          "Você deixa de receber os e-mails do Observando sobre as votações dos parlamentares que acompanha.",
         ];
 
   return (
     <main className="mx-auto w-full max-w-xl flex-1 px-4 py-16 sm:px-6">
-      <p className="font-serif text-lg text-text">Observa</p>
+      <p>
+        <Logo />
+      </p>
       <h1 className="mt-5 font-serif text-3xl leading-tight text-text">{title}</h1>
       <p className="mt-3 text-[15px] leading-relaxed text-text-muted">{body}</p>
       {!feito && !erro && t ? (

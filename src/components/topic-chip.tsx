@@ -24,7 +24,7 @@ export function TopicChip({ assignment }: { assignment: TopicAssignment }) {
   const title =
     assignment.topicId === "outros"
       ? assignment.officialTheme
-        ? `Nenhum tema oficial desta proposição corresponde às categorias do Observa. Temas oficiais: ${assignment.officialTheme}`
+        ? `Nenhum tema oficial desta proposição corresponde às categorias do Observando. Temas oficiais: ${assignment.officialTheme}`
         : "A fonte não informa tema oficial para esta votação."
       : `Atribuído por ${source} · confiança ${assignment.confidence}`;
 

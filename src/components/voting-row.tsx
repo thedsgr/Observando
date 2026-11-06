@@ -232,7 +232,7 @@ export function VotingRow({ item, highlighted, deputyVotes }: Props) {
             ) : (
               <p className="text-[13px] leading-relaxed text-text-dim">
                 A fonte não publicou votos individuais nesta votação, então o
-                Observa não atribui voto a nenhum parlamentar. Não é possível
+                Observando não atribui voto a nenhum parlamentar. Não é possível
                 afirmar, a partir do dado disponível, se a votação foi simbólica
                 ou se os registros ainda não foram divulgados.
               </p>

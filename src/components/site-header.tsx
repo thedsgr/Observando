@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { Logo } from "@/components/ui/logo";
 
 type Props = {
   onOpenSearch: () => void;
@@ -13,8 +14,8 @@ export function SiteHeader({ onOpenSearch, syncLabel, showPreferences }: Props) 
   return (
     <header className="sticky top-0 z-40 border-b border-border-subtle bg-bg/80 backdrop-blur-md">
       <div className="mx-auto flex max-w-[1600px] items-center gap-4 px-4 py-3 sm:px-7">
-        <Link href="/" className="flex shrink-0 items-baseline gap-2.5">
-          <span className="font-serif text-xl leading-none text-text">Observa</span>
+        <Link href="/" className="flex shrink-0 items-center gap-2.5">
+          <Logo size="lg" />
           <span className="hidden text-xs text-text-dim sm:block">
             Câmara dos Deputados
           </span>

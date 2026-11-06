@@ -9,7 +9,7 @@ import { isValidEmail } from "@/lib/preferences";
  * Pedido de exclusão. Não apaga nada: manda o link para o endereço.
  *
  * A resposta é a mesma haja ou não inscrição com o endereço — do contrário a
- * tela de exclusão viraria um jeito de descobrir quem usa o Observa. Quando
+ * tela de exclusão viraria um jeito de descobrir quem usa o Observando. Quando
  * não há inscrição, nada é enviado, e a tela diz "se houver".
  */
 export async function POST(request: Request) {
