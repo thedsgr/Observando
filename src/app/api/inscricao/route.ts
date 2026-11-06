@@ -1,7 +1,11 @@
 import { NextResponse } from "next/server";
 import { hasServiceDb } from "@/lib/db/client";
-import { TOKEN_TTL_HOURS, upsertSubscription } from "@/lib/db/subscriptions";
-import { applyMessage, verifyMessage } from "@/lib/email/messages";
+import {
+  TOKEN_TTL_HOURS,
+  requestDeletion,
+  upsertSubscription,
+} from "@/lib/db/subscriptions";
+import { applyMessage, emailChangeMessage, verifyMessage } from "@/lib/email/messages";
 import { sendEmail, siteUrl } from "@/lib/email/send";
 import { isValidEmail, type Frequency } from "@/lib/preferences";
 import { TOPICS } from "@/lib/topics";
@@ -12,6 +16,8 @@ const TOPIC_IDS = TOPICS.map((topic) => topic.id);
 
 type Body = {
   email?: unknown;
+  /** E-mail que estava guardado no navegador, quando a pessoa o trocou. */
+  previousEmail?: unknown;
   frequency?: unknown;
   legislators?: unknown;
   topics?: unknown;
@@ -95,6 +101,27 @@ export async function POST(request: Request) {
       // O token é um segredo: nunca volta para o cliente. Enquanto não há
       // mensagem saindo, o link fica no log do servidor para dar para testar.
       console.info(`[observa] ${result.purpose} em ${url}`);
+    }
+
+    // Troca de e-mail: o endereço antigo recebe um link para encerrar a
+    // inscrição dele. Só o clique encerra — ver `emailChangeMessage`. Sem
+    // inscrição no antigo, nada sai, e a resposta é a mesma.
+    const previous =
+      typeof body.previousEmail === "string" ? body.previousEmail.trim().toLowerCase() : "";
+    if (isValidEmail(previous) && previous !== result.address) {
+      const pending = await requestDeletion(previous);
+      if (pending) {
+        const oldUrl = `${siteUrl() ?? ""}/apagar?t=${encodeURIComponent(pending.token)}&troca=1`;
+        const oldSent = await sendEmail(
+          emailChangeMessage({ to: pending.address, url: oldUrl, ttlHours: TOKEN_TTL_HOURS }),
+        );
+        if (oldSent.status === "falhou") {
+          console.error(`[observa] envio ao endereço antigo falhou: ${oldSent.reason}`);
+        }
+        if (oldSent.status !== "enviado" && process.env.NODE_ENV !== "production") {
+          console.info(`[observa] troca (endereço antigo) em ${oldUrl}`);
+        }
+      }
     }
 
     // `delivery` descreve o envio, nunca o assinante: endereço novo, pendente

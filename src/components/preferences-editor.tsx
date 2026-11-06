@@ -36,7 +36,7 @@ type Delivery = "enviado" | "sem-provedor" | "falhou";
 
 type SaveStatus =
   | { kind: "enviando" }
-  | { kind: "pedido"; delivery: Delivery; email: string }
+  | { kind: "pedido"; delivery: Delivery; email: string; previous: string | null }
   | { kind: "erro"; message: string };
 
 type DeletionStatus =
@@ -117,8 +117,13 @@ export function PreferencesEditor({ deputies }: { deputies: Deputy[] }) {
   /** Grava no navegador e pede ao servidor, pelo mesmo caminho da inscrição. */
   async function save() {
     const next = current as Preferences;
-    savePreferences(next);
+    // O endereço guardado antes desta edição. Se mudou, o servidor manda ao
+    // antigo um link para encerrar a inscrição dele.
+    const before = preferences?.channel?.address?.trim().toLowerCase() ?? "";
     const email = next.channel?.address ?? "";
+    const previous =
+      isValidEmail(before) && before !== email.trim().toLowerCase() ? before : null;
+    savePreferences(next);
     setSaveStatus({ kind: "enviando" });
     try {
       const response = await fetch("/api/inscricao", {
@@ -126,6 +131,7 @@ export function PreferencesEditor({ deputies }: { deputies: Deputy[] }) {
         headers: { "content-type": "application/json" },
         body: JSON.stringify({
           email,
+          ...(previous ? { previousEmail: previous } : {}),
           frequency: next.frequency,
           legislators: next.legislators,
           topics: next.topics,
@@ -138,7 +144,7 @@ export function PreferencesEditor({ deputies }: { deputies: Deputy[] }) {
       };
       setSaveStatus(
         response.ok && body.ok
-          ? { kind: "pedido", delivery: body.delivery ?? "sem-provedor", email }
+          ? { kind: "pedido", delivery: body.delivery ?? "sem-provedor", email, previous }
           : { kind: "erro", message: body.message ?? "O servidor não aceitou o pedido." },
       );
     } catch {
@@ -411,7 +417,11 @@ export function PreferencesEditor({ deputies }: { deputies: Deputy[] }) {
           {saveStatus.kind === "erro"
             ? `Salvo neste navegador, mas o servidor não aceitou: ${saveStatus.message}`
             : saveStatus.delivery === "enviado"
-              ? `Salvo neste navegador. Para valer nos avisos, confirme pelo link que enviamos para ${saveStatus.email}. Até lá, nada muda nos avisos.`
+              ? `Salvo neste navegador. Para valer nos avisos, confirme pelo link que enviamos para ${saveStatus.email}. Até lá, nada muda nos avisos.${
+                  saveStatus.previous
+                    ? ` Se ${saveStatus.previous} recebia avisos, mandamos para ele um link para parar: sem o clique nele, os dois endereços recebem.`
+                    : ""
+                }`
               : saveStatus.delivery === "sem-provedor"
                 ? "Salvo neste navegador. O envio de e-mail não está configurado, então a mudança ainda não chega aos avisos."
                 : "Salvo neste navegador, mas o e-mail de confirmação não saiu. Tente salvar de novo em alguns minutos."}

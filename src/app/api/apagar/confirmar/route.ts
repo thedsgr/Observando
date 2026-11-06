@@ -10,7 +10,9 @@ export async function POST(request: Request) {
   const url = new URL(request.url);
   const form = await request.formData().catch(() => null);
   const token = form?.get("t");
-  const back = (query: string) => NextResponse.redirect(new URL(`/apagar?${query}`, url), 303);
+  const troca = form?.get("troca") === "1" ? "&troca=1" : "";
+  const back = (query: string) =>
+    NextResponse.redirect(new URL(`/apagar?${query}${troca}`, url), 303);
 
   if (typeof token !== "string" || !token || !hasServiceDb()) return back("erro=1");
   const done = await confirmDeletion(token).catch(() => false);

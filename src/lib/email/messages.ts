@@ -196,6 +196,49 @@ export function deletionMessage(context: {
   return { to: context.to, subject: "Confirme a exclusão dos seus dados", text, html };
 }
 
+/**
+ * Vai para o endereço ANTIGO quando alguém troca o e-mail nas preferências.
+ *
+ * Trocar não pode apagar o antigo direto: quem trocou não provou ter acesso
+ * a ele, e qualquer um poderia encerrar a inscrição de outra pessoa digitando
+ * o endereço dela. Então o antigo recebe um link, e só o clique encerra.
+ * O endereço novo não aparece aqui — a mensagem não precisa dele, e quem não
+ * pediu a troca não tem por que conhecê-lo.
+ */
+export function emailChangeMessage(context: {
+  to: string;
+  url: string;
+  ttlHours: number;
+}): EmailMessage {
+  const text = [
+    "Pediram para mudar o e-mail que recebe os avisos do Observa para outro",
+    "endereço.",
+    "",
+    "Se foi você, confirme neste link para este endereço parar de receber. A",
+    "inscrição dele (o e-mail, as escolhas e o histórico de avisos) é apagada:",
+    context.url,
+    "",
+    `O link vale por ${context.ttlHours} horas. Confirme também o endereço novo,`,
+    "pelo link que mandamos para ele: até lá, ele não recebe nada.",
+    "",
+    "Se não foi você, ignore este e-mail. Este endereço continua recebendo como antes.",
+  ].join("\n");
+
+  const html = wrap({
+    heading: "Parar os avisos neste endereço?",
+    body: [
+      '<p style="margin:0 0 12px">Pediram para mudar o e-mail que recebe os avisos do Observa para outro endereço.</p>',
+      '<p style="margin:0 0 16px">Se foi você, confirme no botão abaixo para este endereço parar de receber. A inscrição dele (o e-mail, as escolhas e o histórico de avisos) é apagada.</p>',
+      button(context.url, "Parar os avisos aqui"),
+      `<p style="margin:0 0 20px;font-size:13px;color:#666">O link vale por ${context.ttlHours} horas. `,
+      "Confirme também o endereço novo, pelo link que mandamos para ele: até lá, ele não recebe nada.</p>",
+      '<p style="margin:0;font-size:13px;color:#666">Se não foi você, ignore este e-mail. Este endereço continua recebendo como antes.</p>',
+    ].join(""),
+  });
+
+  return { to: context.to, subject: "Parar os avisos neste endereço?", text, html };
+}
+
 /* =========================================================================
    Resumo de votações.
 
