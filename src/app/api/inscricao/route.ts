@@ -1,6 +1,8 @@
 import { NextResponse } from "next/server";
 import { hasServiceDb } from "@/lib/db/client";
-import { upsertSubscription } from "@/lib/db/subscriptions";
+import { TOKEN_TTL_HOURS, upsertSubscription } from "@/lib/db/subscriptions";
+import { applyMessage, verifyMessage } from "@/lib/email/messages";
+import { sendEmail, siteUrl } from "@/lib/email/send";
 import { isValidEmail, type Frequency } from "@/lib/preferences";
 import { TOPICS } from "@/lib/topics";
 import type { TopicId } from "@/lib/types";
@@ -71,23 +73,38 @@ export async function POST(request: Request) {
   try {
     const result = await upsertSubscription({ email, frequency, legislators, topics });
 
-    const emailProviderConfigured = Boolean(process.env.RESEND_API_KEY);
-    if (emailProviderConfigured) {
-      // TODO(fase 4): enviar o e-mail de confirmação com o link mágico.
-    } else {
-      // O token é um segredo: nunca volta para o cliente. Em desenvolvimento
-      // fica no log do servidor para dar para testar a confirmação.
-      if (process.env.NODE_ENV !== "production") {
-        console.info(
-          `[observa] ${result.purpose} em /confirmar?token=${result.token}`,
-        );
-      }
+    const url = `${siteUrl() ?? ""}/confirmar?token=${result.token}`;
+    const context = {
+      to: result.address,
+      url,
+      ttlHours: TOKEN_TTL_HOURS,
+      legislators: result.legislatorNames,
+      topics,
+      frequency,
+    };
+    const sent = await sendEmail(
+      result.purpose === "apply" ? applyMessage(context) : verifyMessage(context),
+    );
+
+    if (sent.status === "falhou") {
+      // Falha de envio é problema de operação, não do pedido: a inscrição já
+      // está gravada e o link continua válido para uma nova tentativa.
+      console.error(`[observa] envio falhou: ${sent.reason}`);
+    }
+    if (sent.status !== "enviado" && process.env.NODE_ENV !== "production") {
+      // O token é um segredo: nunca volta para o cliente. Enquanto não há
+      // mensagem saindo, o link fica no log do servidor para dar para testar.
+      console.info(`[observa] ${result.purpose} em ${url}`);
     }
 
-    // A resposta é a mesma para endereço novo, endereço pendente e endereço já
-    // confirmado. Dizer qual é o caso deixaria sondar quem usa o Observa: era
-    // o que `alreadyVerified` fazia antes de sair daqui.
-    return NextResponse.json({ ok: true, emailSent: emailProviderConfigured });
+    // `delivery` descreve o envio, nunca o assinante: endereço novo, pendente
+    // e já confirmado respondem igual. Dizer qual é o caso deixaria sondar
+    // quem usa o Observa — era o que `alreadyVerified` fazia antes de sair.
+    return NextResponse.json({
+      ok: true,
+      emailSent: sent.status === "enviado",
+      delivery: sent.status,
+    });
   } catch (error) {
     const message = error instanceof Error ? error.message : "erro desconhecido";
     return NextResponse.json(

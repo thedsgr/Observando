@@ -24,10 +24,19 @@ import type { Deputy, TopicId } from "@/lib/types";
  * linguagem sem jargão, e nenhum passo obrigatório além do primeiro e do
  * último. Quem não quiser escolher temas recebe tudo.
  */
-/** Desfecho da inscrição, para a tela final dizer a verdade sobre o envio. */
+/**
+ * Desfecho da inscrição, para a tela final dizer a verdade sobre o envio.
+ *
+ * `delivery` separa dois casos que a tela não pode confundir: ambiente sem
+ * provedor configurado é uma pendência de quem instalou, e falha no envio é um
+ * problema passageiro que vale tentar de novo. Dizer "não está configurado"
+ * quando o provedor existe e só recusou seria mentira útil para ninguém.
+ */
+type Delivery = "enviado" | "sem-provedor" | "falhou";
+
 type Outcome =
   | { status: "enviando" }
-  | { status: "inscrito"; emailSent: boolean }
+  | { status: "inscrito"; delivery: Delivery }
   | { status: "so-local"; reason: string };
 
 export function Onboarding({ deputies }: { deputies: Deputy[] }) {
@@ -60,12 +69,15 @@ export function Onboarding({ deputies }: { deputies: Deputy[] }) {
       });
       const body = (await response.json()) as {
         ok?: boolean;
-        emailSent?: boolean;
+        delivery?: Delivery;
         message?: string;
       };
 
       if (response.ok && body.ok) {
-        setOutcome({ status: "inscrito", emailSent: Boolean(body.emailSent) });
+        setOutcome({
+          status: "inscrito",
+          delivery: body.delivery ?? "sem-provedor",
+        });
       } else {
         setOutcome({
           status: "so-local",
@@ -216,14 +228,19 @@ function StepDone({
   // endereço já confirmado — porque a API não diz qual foi. Dizer revelaria
   // quem usa o Observa a quem digitasse um e-mail alheio.
   const inscrito = outcome.status === "inscrito";
+  const delivery = outcome.status === "inscrito" ? outcome.delivery : null;
 
   return (
     <section>
       <h2 className="text-xl text-text">
-        {inscrito ? "Tudo certo" : "Suas escolhas valem neste navegador"}
+        {!inscrito
+          ? "Suas escolhas valem neste navegador"
+          : delivery === "enviado"
+            ? "Confirme no seu e-mail"
+            : "Pedido registrado"}
       </h2>
 
-      {inscrito && outcome.emailSent && (
+      {delivery === "enviado" && (
         <p className="mt-3 text-[15px] leading-relaxed text-text-muted">
           Enviamos um link de confirmação para{" "}
           <span className="text-text">{email}</span>. Suas escolhas passam a
@@ -232,15 +249,19 @@ function StepDone({
         </p>
       )}
 
-      {inscrito && !outcome.emailSent && (
+      {inscrito && delivery !== "enviado" && (
         <>
           <p className="mt-3 text-[15px] leading-relaxed text-text-muted">
             Registramos seu pedido para <span className="text-text">{email}</span>.
           </p>
           <p className="mt-3 rounded-lg border border-dashed border-flag/50 px-4 py-3 text-[13px] leading-relaxed text-flag">
-            O envio de e-mail ainda não está configurado neste ambiente, então
-            nenhuma mensagem foi enviada e nenhuma será até isso mudar. Preferimos
-            dizer isso a deixar você esperando um e-mail que não vem.
+            {delivery === "sem-provedor"
+              ? `O envio de e-mail ainda não está configurado neste ambiente, então
+                 nenhuma mensagem foi enviada e nenhuma será até isso mudar.
+                 Preferimos dizer isso a deixar você esperando um e-mail que não vem.`
+              : `O e-mail de confirmação não saiu: o envio falhou. Seu pedido está
+                 guardado, então tente de novo em alguns minutos. Nada é enviado
+                 enquanto você não confirmar.`}
           </p>
         </>
       )}

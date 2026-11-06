@@ -45,9 +45,13 @@ export type SubscriptionResult = {
    * exatamente o que não queremos que dê para sondar.
    */
   purpose: TokenPurpose;
+  /** Endereço normalizado, que é para onde a mensagem vai. */
+  address: string;
+  /** Nomes dos parlamentares, para a mensagem mostrar o que foi pedido. */
+  legislatorNames: string[];
 };
 
-const TOKEN_TTL_HOURS = 48;
+export const TOKEN_TTL_HOURS = 48;
 
 function hashToken(token: string): string {
   return createHash("sha256").update(token).digest("hex");
@@ -66,11 +70,11 @@ function normalizeEmail(email: string): string {
 async function resolvePreferences(
   db: Db,
   input: SubscriptionInput,
-): Promise<Preferences> {
+): Promise<{ preferences: Preferences; names: string[] }> {
   const externalIds = input.legislators.map((item) => String(item.externalId));
   const { data: rows, error } = await db
     .from("legislators")
-    .select("id, external_id")
+    .select("id, external_id, name")
     .eq("house_id", "camara")
     .in("external_id", externalIds);
   if (error) throw new Error(`Falha ao ler parlamentares: ${error.message}`);
@@ -88,9 +92,12 @@ async function resolvePreferences(
   }
 
   return {
-    legislatorIds: found.map((row) => row.id as string),
-    topics: input.topics,
-    frequency: input.frequency,
+    preferences: {
+      legislatorIds: found.map((row) => row.id as string),
+      topics: input.topics,
+      frequency: input.frequency,
+    },
+    names: found.map((row) => row.name as string),
   };
 }
 
@@ -188,7 +195,7 @@ export async function upsertSubscription(
     .maybeSingle();
 
   // Antes de decidir o caminho: validar. Vale para os dois, e é só leitura.
-  const preferences = await resolvePreferences(db, input);
+  const { preferences, names } = await resolvePreferences(db, input);
 
   if (existingChannel?.verified_at) {
     return {
@@ -199,6 +206,8 @@ export async function upsertSubscription(
         payload: preferences,
       }),
       purpose: "apply",
+      address,
+      legislatorNames: names,
     };
   }
 
@@ -238,6 +247,8 @@ export async function upsertSubscription(
       payload: null,
     }),
     purpose: "verify",
+    address,
+    legislatorNames: names,
   };
 }
 

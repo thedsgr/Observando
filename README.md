@@ -6,9 +6,9 @@ fonte oficial. Ver `docs/prd.md` para a proposta de produto completa.
 
 > **Fase 3 (atual).** Onboarding e acompanhamento personalizado. A pessoa
 > escolhe parlamentares, temas e frequência, e a home passa a refletir essa
-> configuração. O banco está de pé com os 513 deputados, e a inscrição grava e
-> confirma pelo link mágico; falta **um provedor de e-mail** para as mensagens
-> saírem.
+> configuração. O banco está de pé com os 513 deputados, a inscrição grava e
+> confirma pelo link mágico, e o envio de e-mail está implementado; falta
+> **a conta no provedor e um domínio verificado** para as mensagens saírem.
 >
 > Escopo do MVP: **Câmara dos Deputados e e-mail**. Senado, SMS e WhatsApp
 > entram depois, e o modelo de dados já os prevê.
@@ -29,6 +29,13 @@ pode existir no servidor; `.env.local` é ignorado pelo git.
 ```bash
 npm run sync:deputados
 ```
+
+Para as mensagens saírem, preencha também `RESEND_API_KEY`,
+`OBSERVA_EMAIL_FROM` e `OBSERVA_SITE_URL`. Faltando qualquer uma, a inscrição
+é gravada e a interface diz que nada foi enviado. O Resend só entrega para
+endereços quaisquer depois que um domínio é verificado em Domains; antes disso
+o único remetente aceito é `onboarding@resend.dev` e o único destinatário é o
+e-mail da própria conta.
 
 Sem isso a inscrição falha de propósito: `subscriber_legislators` referencia
 `legislators`, e gravar metade faria a pessoa achar que acompanha alguém que o
@@ -152,7 +159,12 @@ fora da tabela não geram categoria: a votação fica sem tema até revisão.
   quem ela acompanha, e reativaria quem cancelou. `opted_out_at` só é limpo na
   confirmação, nunca no pedido.
 - **A resposta da inscrição é igual para endereço novo e já assinante.** Dizer
-  qual é o caso deixaria sondar quem usa o Observa.
+  qual é o caso deixaria sondar quem usa o Observa. `delivery` descreve só o
+  envio, nunca o assinante.
+- **Os dois e-mails dizem o que acontece se a pessoa ignorar.** Qualquer um
+  pode digitar o endereço de outra pessoa no onboarding, então quem recebe sem
+  ter pedido precisa saber na primeira leitura que ignorar basta. O e-mail de
+  mudança mostra o que mudaria, para a pessoa reconhecer — ou não — o pedido.
 - **Nenhum tema marcado significa todos.** É o padrão de quem não quer
   escolher.
 - **Votação sem tema atribuído nunca é escondida por filtro de tema.** Omitir
@@ -164,10 +176,10 @@ fora da tabela não geram categoria: a votação fica sem tema até revisão.
 
 ## O que falta
 
-1. **Envio de e-mail** (Resend ou equivalente). O link mágico já é gerado e
-   guardado como hash; falta a mensagem. Em desenvolvimento o link aparece no
-   log do servidor, nunca na resposta ao cliente. Sem provedor, a interface diz
-   que nenhuma mensagem foi enviada em vez de fingir que mandou.
+1. **Conta no provedor e domínio verificado.** O envio está implementado; sem
+   as três variáveis preenchidas nada sai, e a interface distingue "não está
+   configurado" de "o envio falhou" em vez de dizer que mandou. Em
+   desenvolvimento o link aparece no log do servidor, nunca na resposta.
 2. **Sincronizar votações para o banco**, com `dedup_key` nas notificações
    para não reenviar evento antigo como novo (PRD §8.3). Hoje as votações são
    lidas dos arquivos a cada revalidação, sem passar pelo banco.
