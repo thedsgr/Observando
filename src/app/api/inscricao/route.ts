@@ -9,11 +9,8 @@ import {
 import { applyMessage, emailChangeMessage, verifyMessage } from "@/lib/email/messages";
 import { sendEmail, siteUrl } from "@/lib/email/send";
 import { isValidEmail, type Frequency } from "@/lib/preferences";
-import { TOPICS } from "@/lib/topics";
-import type { TopicId } from "@/lib/types";
 
 const FREQUENCIES: Frequency[] = ["imediato", "diario", "semanal"];
-const TOPIC_IDS = TOPICS.map((topic) => topic.id);
 
 type Body = {
   email?: unknown;
@@ -21,7 +18,6 @@ type Body = {
   previousEmail?: unknown;
   frequency?: unknown;
   legislators?: unknown;
-  topics?: unknown;
 };
 
 /**
@@ -71,12 +67,6 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "sem-parlamentares" }, { status: 400 });
   }
 
-  const topics = Array.isArray(body.topics)
-    ? (body.topics.filter(
-        (id): id is TopicId => typeof id === "string" && TOPIC_IDS.includes(id as TopicId),
-      ) as TopicId[])
-    : [];
-
   const previous =
     typeof body.previousEmail === "string" ? body.previousEmail.trim().toLowerCase() : "";
 
@@ -92,7 +82,7 @@ export async function POST(request: Request) {
   }
 
   try {
-    const result = await upsertSubscription({ email, frequency, legislators, topics });
+    const result = await upsertSubscription({ email, frequency, legislators });
 
     const url = `${siteUrl() ?? ""}/confirmar?token=${result.token}`;
     const context = {
@@ -100,7 +90,6 @@ export async function POST(request: Request) {
       url,
       ttlHours: TOKEN_TTL_HOURS,
       legislators: result.legislatorNames,
-      topics,
       frequency,
     };
     const sent = await sendEmail(

@@ -149,7 +149,6 @@ export function Dashboard({
     () =>
       filterVotings(votings, {
         topicId,
-        topicIds: onlyMine ? preferences?.topics : undefined,
         deputyIds: searched
           ? [searched.id]
           : onlyMine && isPersonal
@@ -162,7 +161,6 @@ export function Dashboard({
       votings,
       topicId,
       onlyMine,
-      preferences?.topics,
       searched,
       isPersonal,
       followed,

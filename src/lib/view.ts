@@ -39,8 +39,6 @@ export type DeputyVotes = Record<string, Record<string, string>>;
 export type VotingFilters = {
   /** Tema único escolhido na interface. */
   topicId?: TopicId | null;
-  /** Temas do acompanhamento. Vazio ou ausente significa todos. */
-  topicIds?: TopicId[];
   /** Só votações em que ao menos um destes parlamentares tem registro. */
   deputyIds?: number[] | null;
   deputyVotes?: DeputyVotes | null;
@@ -48,27 +46,11 @@ export type VotingFilters = {
   onlyWithVotes?: boolean;
 };
 
-function matchesTopics(
-  voting: VotingWithContext["voting"],
-  topicIds: TopicId[] | undefined,
-): boolean {
-  if (!topicIds || topicIds.length === 0) return true;
-
-  // Toda votação classificada tem ao menos um tema — no mínimo "Outros". Uma
-  // sem tema nenhum é uma que a sincronização ainda não classificou, e essa
-  // não é escondida: omitir um voto real por atraso nosso faria o usuário
-  // concluir que o parlamentar não votou (PRD §8.2: os temas priorizam, não
-  // ocultam histórico).
-  if (voting.topics.length === 0) return true;
-
-  return voting.topics.some((topic) => topicIds.includes(topic.topicId));
-}
-
 export function filterVotings(
   items: VotingWithContext[],
   filters: VotingFilters,
 ): VotingWithContext[] {
-  const { topicId, topicIds, deputyIds, deputyVotes, onlyWithVotes } = filters;
+  const { topicId, deputyIds, deputyVotes, onlyWithVotes } = filters;
 
   return items.filter((item) => {
     const { voting } = item;
@@ -76,7 +58,6 @@ export function filterVotings(
     if (topicId && !voting.topics.some((topic) => topic.topicId === topicId)) {
       return false;
     }
-    if (!matchesTopics(voting, topicIds)) return false;
     if (onlyWithVotes && !voting.hasIndividualVotes) return false;
 
     if (deputyIds && deputyIds.length > 0) {

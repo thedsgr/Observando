@@ -27,7 +27,9 @@ function read(): Preferences | null {
   try {
     const raw = window.localStorage.getItem(KEY);
     if (!raw) return null;
-    const parsed = JSON.parse(raw) as Partial<Preferences>;
+    const parsed = JSON.parse(raw) as Partial<Preferences> & { topics?: unknown };
+    // `topics` vem de versões que deixavam escolher temas; não vale mais nada.
+    delete parsed.topics;
     return { ...EMPTY_PREFERENCES, ...parsed };
   } catch {
     // Janela anônima, armazenamento bloqueado ou JSON corrompido.

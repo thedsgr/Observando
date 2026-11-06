@@ -1,5 +1,3 @@
-import type { TopicId } from "@/lib/types";
-
 /**
  * Preferências de acompanhamento.
  *
@@ -32,8 +30,6 @@ export type FollowedLegislator = {
 
 export type Preferences = {
   legislators: FollowedLegislator[];
-  /** Vazio significa **todos os temas**, que é o padrão de quem não escolhe. */
-  topics: TopicId[];
   channel: Channel | null;
   frequency: Frequency;
   /** Quando o onboarding foi concluído. */
@@ -42,7 +38,6 @@ export type Preferences = {
 
 export const EMPTY_PREFERENCES: Preferences = {
   legislators: [],
-  topics: [],
   channel: null,
   frequency: "semanal",
   completedAt: null,

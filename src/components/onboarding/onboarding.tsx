@@ -1,7 +1,6 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { TOPICS } from "@/lib/topics";
 import { deputyCaption } from "@/lib/format";
 import {
   EMPTY_PREFERENCES,
@@ -14,16 +13,21 @@ import {
 } from "@/lib/preferences";
 import { savePreferences } from "@/lib/preferences-store";
 import { searchDeputies } from "@/lib/view";
-import type { Deputy, TopicId } from "@/lib/types";
+import type { Deputy } from "@/lib/types";
 import { Logo } from "@/components/ui/logo";
 
 /**
- * Onboarding em três passos: quem acompanhar, sobre o quê, e como ser avisado.
+ * Onboarding em dois passos: quem acompanhar e como ser avisado.
  *
  * O público do produto é quem tem pouco tempo e acha o processo legislativo
- * difícil (não quem já acompanha política). Por isso: uma decisão por tela,
- * linguagem sem jargão, e nenhum passo obrigatório além do primeiro e do
- * último. Quem não quiser escolher temas recebe tudo.
+ * difícil (não quem já acompanha política). Por isso: uma decisão por tela e
+ * linguagem sem jargão.
+ *
+ * Não há escolha de temas. Acompanhar um parlamentar é acompanhar tudo o que
+ * ele vota, inclusive o que a pessoa não iria procurar — filtrar por tema
+ * esconderia justamente esses votos, e a classificação é imperfeita o
+ * bastante para esconder outros por engano. Os temas ficam no painel, como
+ * forma de ler, não de filtrar o que chega.
  */
 /**
  * Desfecho da inscrição, para a tela final dizer a verdade sobre o envio.
@@ -45,7 +49,7 @@ export function Onboarding({ deputies }: { deputies: Deputy[] }) {
   const [draft, setDraft] = useState<Preferences>(EMPTY_PREFERENCES);
   const [outcome, setOutcome] = useState<Outcome | null>(null);
 
-  const steps = ["Parlamentares", "Temas", "Avisos"];
+  const steps = ["Parlamentares", "Avisos"];
 
   async function finish(email: string, frequency: Frequency) {
     const next: Preferences = {
@@ -65,7 +69,6 @@ export function Onboarding({ deputies }: { deputies: Deputy[] }) {
           email: next.channel?.address,
           frequency: next.frequency,
           legislators: next.legislators,
-          topics: next.topics,
         }),
       });
       const body = (await response.json()) as {
@@ -108,7 +111,7 @@ export function Onboarding({ deputies }: { deputies: Deputy[] }) {
           Você votou neles. Agora acompanhe o que eles votam.
         </h1>
         <p className="mt-3 text-[15px] leading-relaxed text-text-muted">
-          Três perguntas rápidas e a gente avisa você, por e-mail, toda vez que
+          Duas perguntas rápidas e a gente avisa você, por e-mail, toda vez que
           os parlamentares que você escolher votarem alguma coisa.
         </p>
       </header>
@@ -173,27 +176,10 @@ export function Onboarding({ deputies }: { deputies: Deputy[] }) {
           />
         )}
 
-        {step === 1 && (
-          <StepTopics
-            selected={draft.topics}
-            onToggle={(topicId) =>
-              setDraft((current) => ({
-                ...current,
-                topics: current.topics.includes(topicId)
-                  ? current.topics.filter((item) => item !== topicId)
-                  : [...current.topics, topicId],
-              }))
-            }
-            onClear={() => setDraft((current) => ({ ...current, topics: [] }))}
-            onBack={() => setStep(0)}
-            onNext={() => setStep(2)}
-          />
-        )}
-
-        {step === 2 && !outcome && (
+        {step === 1 && !outcome && (
           <StepChannel
             legislatorCount={draft.legislators.length}
-            onBack={() => setStep(1)}
+            onBack={() => setStep(0)}
             onFinish={finish}
           />
         )}
@@ -389,81 +375,6 @@ function StepLegislators({
         nextDisabled={selected.length === 0}
         hint={selected.length === 0 ? "Escolha pelo menos um parlamentar" : undefined}
       />
-    </section>
-  );
-}
-
-function StepTopics({
-  selected,
-  onToggle,
-  onClear,
-  onBack,
-  onNext,
-}: {
-  selected: TopicId[];
-  onToggle: (topicId: TopicId) => void;
-  onClear: () => void;
-  onBack: () => void;
-  onNext: () => void;
-}) {
-  const all = selected.length === 0;
-
-  return (
-    <section>
-      <h2 className="text-xl text-text">Quais assuntos te interessam?</h2>
-      <p className="mt-2 text-[15px] leading-relaxed text-text-muted">
-        Isso define o que entra nos seus avisos. Se não escolher nada, você
-        recebe tudo — e dá para mudar depois.
-      </p>
-
-      <button
-        type="button"
-        onClick={onClear}
-        aria-pressed={all}
-        className={[
-          "mt-5 w-full rounded-lg border px-4 py-3 text-left transition-colors",
-          all
-            ? "border-accent/50 bg-accent/10 text-accent"
-            : "border-border-subtle bg-surface text-text-muted hover:border-border-strong",
-        ].join(" ")}
-      >
-        <span className="block text-[15px]">Quero receber tudo</span>
-        <span className="mt-0.5 block text-[13px] text-text-dim">
-          Todas as votações dos parlamentares que você escolheu
-        </span>
-      </button>
-
-      <div className="mt-4 grid grid-cols-2 gap-2">
-        {TOPICS.map((topic) => {
-          const picked = selected.includes(topic.id);
-          return (
-            <button
-              key={topic.id}
-              type="button"
-              onClick={() => onToggle(topic.id)}
-              aria-pressed={picked}
-              className={[
-                "rounded-lg border px-4 py-3 text-left text-[15px] transition-colors",
-                picked
-                  ? "border-accent/50 bg-accent/10 text-accent"
-                  : "border-border-subtle bg-surface text-text hover:border-border-strong",
-              ].join(" ")}
-            >
-              {topic.label}
-            </button>
-          );
-        })}
-      </div>
-
-      {/* O tema prioriza o aviso, mas não esconde histórico (PRD §8.2). */}
-      <p className="mt-4 text-[13px] leading-relaxed text-text-dim">
-        O tema filtra os avisos, não o site: no seu painel você continua vendo
-        todas as votações dos seus parlamentares. Votações que a Câmara não
-        classificou também aparecem — preferimos mostrar um voto a mais do que
-        esconder um voto que existe.
-      </p>
-
-      <Footer onBack={onBack} onNext={onNext} nextLabel="Continuar" />
     </section>
   );
 }

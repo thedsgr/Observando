@@ -1,11 +1,11 @@
 # Observando
 
 Aplicação web de transparência cívica: o cidadão escolhe deputados federais e
-temas de interesse e acompanha como esses parlamentares votam, com contexto e
+acompanha como esses parlamentares votam, com contexto e
 fonte oficial. Ver `docs/prd.md` para a proposta de produto completa.
 
 > **Fase 3 (atual).** Onboarding e acompanhamento personalizado. A pessoa
-> escolhe parlamentares, temas e frequência, e a home passa a refletir essa
+> escolhe parlamentares e frequência, e a home passa a refletir essa
 > configuração. O banco está de pé com os 513 deputados, a inscrição grava e
 > confirma pelo link mágico, e o envio de e-mail está implementado; falta
 > **a conta no provedor e um domínio verificado** para as mensagens saírem.
@@ -204,14 +204,14 @@ categoria mais parecida.
   com tema oficial conhecido — Direito Civil, Política e Eleições — chegavam ao
   filtro como "sem tema" e passavam por qualquer escolha. Escolhidas pelo peso
   nas votações nominais. Homenagens fica de fora de propósito.
-- **Nenhum tema marcado significa todos.** É o padrão de quem não quer
-  escolher.
-- **Votação sem categoria vai para "Outros".** Antes ela passava por qualquer
-  filtro de tema, e quem escolhia só "Saúde" recebia também homenagens e
-  projetos sem tema. Agora só chega a quem marcou "Outros" ou não filtrou
-  tema. A única votação que ainda passa por qualquer filtro é a que a
-  sincronização não classificou ainda: omitir um voto real por atraso nosso
-  faria o usuário concluir que o parlamentar não votou.
+- **Quem acompanha um parlamentar recebe tudo o que ele vota.** Não há
+  escolha de temas no onboarding nem nas preferências. Filtrar por tema ia
+  contra a proposta: quem acompanhava um deputado só por "Saúde" nunca via o
+  voto dele numa reforma tributária, e a classificação imperfeita escondia
+  outros votos por engano. O volume já é baixo, e a frequência controla
+  quantos e-mails chegam. Os temas ficam no painel, como forma de ler.
+- **Votação sem categoria vai para "Outros".** No painel, o filtro por tema
+  mostra em "Outros" o que não tem categoria correspondente.
 - **Um pedido novo aposenta o link anterior.** Os links de confirmação e de
   mudança ainda não usados do mesmo endereço são apagados quando sai outro.
   Senão um link velho confirmaria escolhas que a mensagem dele não mostrava,

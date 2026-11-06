@@ -2,7 +2,6 @@ import "server-only";
 import { createHash, randomBytes } from "node:crypto";
 import { serviceDb } from "@/lib/db/client";
 import type { Frequency } from "@/lib/preferences";
-import type { TopicId } from "@/lib/types";
 
 /**
  * Gravação da inscrição.
@@ -26,13 +25,11 @@ export type SubscriptionInput = {
   email: string;
   frequency: Frequency;
   legislators: Array<{ house: string; externalId: number }>;
-  topics: TopicId[];
 };
 
 /** Preferências já resolvidas para ids internos, prontas para gravar. */
 type Preferences = {
   legislatorIds: string[];
-  topics: TopicId[];
   frequency: Frequency;
 };
 
@@ -94,7 +91,6 @@ async function resolvePreferences(
   return {
     preferences: {
       legislatorIds: found.map((row) => row.id as string),
-      topics: input.topics,
       frequency: input.frequency,
     },
     names: found.map((row) => row.name as string),
@@ -122,18 +118,6 @@ async function applyPreferences(
       })),
     );
     if (error) throw new Error(`Falha ao gravar parlamentares: ${error.message}`);
-  }
-
-  // Nenhuma linha significa "todos os temas".
-  await db.from("subscriber_topics").delete().eq("subscriber_id", subscriberId);
-  if (preferences.topics.length > 0) {
-    const { error } = await db.from("subscriber_topics").insert(
-      preferences.topics.map((topicId) => ({
-        subscriber_id: subscriberId,
-        topic_id: topicId,
-      })),
-    );
-    if (error) throw new Error(`Falha ao gravar temas: ${error.message}`);
   }
 
   const { error } = await db.from("subscriber_settings").upsert(

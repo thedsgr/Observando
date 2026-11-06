@@ -1,7 +1,6 @@
 import "server-only";
 import { FREQUENCY_LABEL, type Frequency } from "@/lib/preferences";
-import { topicLabel } from "@/lib/topics";
-import type { TopicId, VotingObjectKind } from "@/lib/types";
+import type { VotingObjectKind } from "@/lib/types";
 import { OBJECT_KIND_LABEL, OBJECT_KIND_NOTE } from "@/lib/camara/object-kind";
 import { deputyCaption, formatDateTime } from "@/lib/format";
 import type { EmailMessage } from "@/lib/email/send";
@@ -23,7 +22,6 @@ export type MessageContext = {
   url: string;
   ttlHours: number;
   legislators: string[];
-  topics: TopicId[];
   frequency: Frequency;
 };
 
@@ -35,18 +33,12 @@ function escapeHtml(value: string): string {
     .replace(/"/g, "&quot;");
 }
 
-function topicsLine(topics: TopicId[]): string {
-  if (topics.length === 0) return "Todos os temas";
-  return topics.map((id) => topicLabel(id) ?? id).join(", ");
-}
-
 /** Resumo das escolhas, para a pessoa reconhecer — ou não — o que pediu. */
 function summaryText(context: MessageContext): string {
   const quem = context.legislators.map((name) => `  - ${name}`).join("\n");
   return [
     quem,
     "",
-    `Temas: ${topicsLine(context.topics)}`,
     `Frequência: ${FREQUENCY_LABEL[context.frequency]}`,
   ].join("\n");
 }
@@ -57,7 +49,6 @@ function summaryHtml(context: MessageContext): string {
     .join("");
   return [
     `<ul style="margin:0 0 16px;padding-left:20px">${quem}</ul>`,
-    `<p style="margin:0 0 4px"><strong>Temas:</strong> ${escapeHtml(topicsLine(context.topics))}</p>`,
     `<p style="margin:0 0 16px"><strong>Frequência:</strong> ${escapeHtml(FREQUENCY_LABEL[context.frequency])}</p>`,
   ].join("");
 }

@@ -3,7 +3,6 @@
 import { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { TOPICS } from "@/lib/topics";
 import { deputyCaption } from "@/lib/format";
 import {
   FREQUENCY_LABEL,
@@ -16,10 +15,10 @@ import {
 import { clearPreferences, savePreferences } from "@/lib/preferences-store";
 import { usePreferences } from "@/hooks/use-preferences";
 import { searchDeputies } from "@/lib/view";
-import type { Deputy, TopicId } from "@/lib/types";
+import type { Deputy } from "@/lib/types";
 
 /**
- * Edição do acompanhamento: parlamentares, temas, e-mail, frequência e saída.
+ * Edição do acompanhamento: parlamentares, e-mail, frequência e saída.
  *
  * O PRD §5.5 e §8.4 pedem que mudar e cancelar sejam simples. Por isso tudo
  * fica numa tela só, a exclusão é explícita e não está escondida, e nenhuma
@@ -134,7 +133,6 @@ export function PreferencesEditor({ deputies }: { deputies: Deputy[] }) {
           ...(previous ? { previousEmail: previous } : {}),
           frequency: next.frequency,
           legislators: next.legislators,
-          topics: next.topics,
         }),
       });
       const body = (await response.json()) as {
@@ -300,42 +298,6 @@ export function PreferencesEditor({ deputies }: { deputies: Deputy[] }) {
             Limite de {MAX_LEGISLATORS} atingido. Remova alguém para trocar.
           </p>
         )}
-      </section>
-
-      {/* Temas */}
-      <section className="mt-9">
-        <h2 className="text-[17px] text-text">Temas dos seus avisos</h2>
-        <p className="mt-1.5 text-[13px] leading-relaxed text-text-dim">
-          Sem nenhum tema marcado, você recebe tudo. O tema filtra os avisos,
-          não o painel.
-        </p>
-        <div className="mt-3 grid grid-cols-2 gap-2">
-          {TOPICS.map((topic) => {
-            const picked = current.topics.includes(topic.id);
-            return (
-              <button
-                key={topic.id}
-                type="button"
-                onClick={() =>
-                  update({
-                    topics: picked
-                      ? current.topics.filter((item) => item !== topic.id)
-                      : [...current.topics, topic.id as TopicId],
-                  })
-                }
-                aria-pressed={picked}
-                className={[
-                  "rounded-lg border px-4 py-2.5 text-left text-[15px] transition-colors",
-                  picked
-                    ? "border-accent/50 bg-accent/10 text-accent"
-                    : "border-border-subtle bg-surface text-text hover:border-border-strong",
-                ].join(" ")}
-              >
-                {topic.label}
-              </button>
-            );
-          })}
-        </div>
       </section>
 
       {/* Canal */}
