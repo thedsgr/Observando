@@ -50,6 +50,12 @@ Ao final, a sincronização chama `generate_notifications()`, que cria em
 nada — só deixa pendente, com `scheduled_for` conforme a frequência (imediato;
 diário às 8h; semanal na segunda às 8h, horário de Brasília).
 
+O envio é `/api/notificacoes/enviar`, chamado por agendador com
+`Authorization: Bearer $CRON_SECRET` (a Vercel chama por GET e manda o
+cabeçalho sozinha). Cada chamada reserva até 50 pessoas e manda uma mensagem
+por pessoa com todas as votações vencidas dela. Sem provedor configurado, não
+reserva nada: os avisos ficam pendentes em vez de virar "falhou".
+
 Deputados que votaram mas não estão mais em exercício — suplentes, quem saiu
 no meio da legislatura — entram em `legislators` com `in_office = false`.
 Descartar os votos deles apagaria voto real.
@@ -217,6 +223,21 @@ fora da tabela não geram categoria: a votação fica sem tema até revisão.
 - **Sem registro de voto, sem aviso.** "Seu deputado não tem registro" não é
   notícia, e o §8.1 proíbe tratar ausência como falta. Voto em branco gera
   aviso: o registro existe.
+- **O e-mail diz o que foi votado de fato.** A maioria das votações é sobre
+  urgência, emenda ou retirada de pauta, não sobre a lei. "Votou Sim no PL X"
+  seria falso quando foi um requerimento, então cada votação traz o tipo do
+  objeto com a explicação, a descrição oficial literal e o resultado separado
+  do voto de cada um. O assunto não cita voto de ninguém: ali não cabe a
+  ressalva, e sem ela ele engana.
+- **Um resumo por pessoa, nunca partido nem repetido.** A reserva trava o
+  assinante, não as linhas: duas execuções ao mesmo tempo não dividem o resumo
+  de alguém em dois e-mails. Testado com seis chamadas simultâneas em oito
+  rodadas. Uma queda entre enviar e registrar é coberta pela chave de
+  idempotência mandada ao provedor.
+- **Descadastro não acontece ao abrir o link.** Filtros de segurança de e-mail
+  abrem todos os links de uma mensagem. O link do corpo leva a uma página com
+  botão; o descadastro em um clique dos provedores (RFC 8058) chega por POST.
+  Sair cancela também o que já estava na fila.
 - **Voto com valor em branco é registro, não ausência.** A fonte tem 466 deles
   em 2026; comparações usam `!== undefined`, nunca truthiness.
 
@@ -226,10 +247,11 @@ fora da tabela não geram categoria: a votação fica sem tema até revisão.
    as três variáveis preenchidas nada sai, e a interface distingue "não está
    configurado" de "o envio falhou" em vez de dizer que mandou. Em
    desenvolvimento o link aparece no log do servidor, nunca na resposta.
-2. **Enviar as notificações.** Elas são geradas e ficam pendentes; falta o
-   passo que lê as vencidas, monta a mensagem com os votos dos parlamentares
-   acompanhados (agrupando por pessoa no diário e no semanal) e envia. A
-   sincronização também precisa de agendamento — hoje roda à mão.
+2. **Agendar.** A sincronização e o envio funcionam, mas rodam à mão. Falta o
+   agendamento: a sincronização uma vez por dia (os arquivos fecham no dia
+   anterior) e o envio a cada poucos minutos. E o envio só sai de fato com
+   conta no provedor, domínio verificado e `CRON_SECRET` e
+   `OBSERVA_UNSUBSCRIBE_SECRET` preenchidos.
 3. **Votação sem categoria ainda passa por qualquer filtro de tema.** Com as
    13 categorias, sobram 3 das 159 nominais de 2026 sem categoria: duas sem
    tema oficial nenhum (PLP 77/2026, recente demais) e uma homenagem. Era 24

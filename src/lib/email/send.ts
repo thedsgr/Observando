@@ -15,6 +15,17 @@ import "server-only";
 
 const ENDPOINT = "https://api.resend.com/emails";
 
+/**
+ * Em desenvolvimento, o endereço do provedor pode apontar para um servidor
+ * local que só registra o pedido — é como o caminho de sucesso do envio é
+ * testado sem mandar e-mail a ninguém. Em produção a variável é ignorada: um
+ * valor errado ali mandaria a chave do provedor para outro servidor.
+ */
+function endpoint(): string {
+  const override = process.env.OBSERVA_EMAIL_ENDPOINT?.trim();
+  return override && process.env.NODE_ENV !== "production" ? override : ENDPOINT;
+}
+
 /** Aborta em vez de prender a resposta da inscrição num provedor pendurado. */
 const TIMEOUT_MS = 10_000;
 
@@ -23,6 +34,14 @@ export type EmailMessage = {
   subject: string;
   text: string;
   html: string;
+  /** Cabeçalhos do e-mail, como `List-Unsubscribe`. */
+  headers?: Record<string, string>;
+  /**
+   * Repetir o envio com a mesma chave não gera um segundo e-mail: o provedor
+   * reconhece e descarta. É o que torna seguro tentar de novo depois de uma
+   * queda entre enviar e registrar que enviou.
+   */
+  idempotencyKey?: string;
 };
 
 export type SendResult =
@@ -62,11 +81,12 @@ export async function sendEmail(message: EmailMessage): Promise<SendResult> {
 
   let response: Response;
   try {
-    response = await fetch(ENDPOINT, {
+    response = await fetch(endpoint(), {
       method: "POST",
       headers: {
         Authorization: `Bearer ${process.env.RESEND_API_KEY}`,
         "Content-Type": "application/json",
+        ...(message.idempotencyKey ? { "Idempotency-Key": message.idempotencyKey } : {}),
       },
       body: JSON.stringify({
         from: process.env.OBSERVA_EMAIL_FROM,
@@ -74,6 +94,7 @@ export async function sendEmail(message: EmailMessage): Promise<SendResult> {
         subject: message.subject,
         text: message.text,
         html: message.html,
+        ...(message.headers ? { headers: message.headers } : {}),
       }),
       signal: AbortSignal.timeout(TIMEOUT_MS),
     });
