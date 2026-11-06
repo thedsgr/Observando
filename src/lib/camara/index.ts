@@ -5,11 +5,12 @@ import {
   propositionSourceUrl,
   votingSourceUrl,
 } from "@/lib/camara/client";
-import { loadSnapshot, type BulkVoting } from "@/lib/camara/bulk";
+import { loadSnapshot } from "@/lib/camara/bulk";
 import {
-  deriveObjectKind,
-  deriveObjectKindFromType,
-} from "@/lib/camara/object-kind";
+  objectKindOf,
+  resultOf,
+  type BulkVoting,
+} from "@/lib/camara/bulk-source";
 import { mapThemes } from "@/lib/camara/topic-map";
 import type { RawDeputy, RawProposition, RawTheme, RawVote } from "@/lib/camara/raw";
 import type {
@@ -106,16 +107,6 @@ function tallyOf(row: BulkVoting): Array<{ value: string; count: number }> {
   ].filter((entry) => entry.count > 0);
 }
 
-function objectKindOf(row: BulkVoting) {
-  // Um único objeto listado é uma determinação da fonte.
-  if (row.objects.length === 1) {
-    const fromType = deriveObjectKindFromType(row.objects[0].siglaTipo);
-    if (fromType) return fromType;
-  }
-  // Vários candidatos, ou tipo desconhecido: resta a descrição em prosa.
-  return deriveObjectKind(row.descricao);
-}
-
 /**
  * Feed público, montado a partir dos arquivos anuais de dados abertos.
  *
@@ -174,8 +165,7 @@ export async function fetchRecentVotings(): Promise<{
       objectKind: objectKindOf(row),
       objectCandidates: row.objects.length,
       hasIndividualVotes: recordedVotes > 0,
-      result:
-        row.aprovacao === 1 ? "Aprovado" : row.aprovacao === 0 ? "Rejeitado" : null,
+      result: resultOf(row.aprovacao),
       topics: extras.topics,
       sourceUrl: votingSourceUrl(row.id),
       syncedAt: snapshot.syncedAt,

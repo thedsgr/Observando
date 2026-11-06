@@ -30,6 +30,25 @@ pode existir no servidor; `.env.local` é ignorado pelo git.
 npm run sync:deputados
 ```
 
+Votações, proposições, votos e temas do ano vão para o banco com:
+
+```bash
+npm run sync:votacoes            # ano corrente
+npm run sync:votacoes -- 2025    # outro ano
+npm run sync:votacoes -- --dry   # só relata, não grava
+```
+
+Lê os mesmos arquivos anuais que o painel e reusa `src/lib/camara/bulk-source.ts`
+para a leitura e a classificação — o banco e a tela não podem dar respostas
+diferentes para "que tipo de objeto foi votado". É idempotente (só upsert) e
+registra cada execução em `sync_runs`. Para antes de gravar se muitas votações
+nominais aparecerem sem voto individual no arquivo: isso indica download
+truncado, e gravar faria a interface dizer "sem registro" sobre voto real.
+
+Deputados que votaram mas não estão mais em exercício — suplentes, quem saiu
+no meio da legislatura — entram em `legislators` com `in_office = false`.
+Descartar os votos deles apagaria voto real.
+
 Para as mensagens saírem, preencha também `RESEND_API_KEY`,
 `OBSERVA_EMAIL_FROM` e `OBSERVA_SITE_URL`. Faltando qualquer uma, a inscrição
 é gravada e a interface diz que nada foi enviado. O Resend só entrega para
@@ -171,6 +190,11 @@ fora da tabela não geram categoria: a votação fica sem tema até revisão.
   um voto real do parlamentar porque a nossa classificação falhou faria o
   usuário concluir que ele não votou. Entre mostrar algo fora do tema e
   esconder um voto que existe, mostramos.
+- **Horário da fonte ganha fuso na entrada.** Os arquivos da Câmara trazem
+  horário de Brasília sem dizer isso. `sourceTimeToIso` converte no momento da
+  leitura, pelo fuso nomeado (o Brasil teve horário de verão até 2019). Sem
+  isso, numa máquina em Brasília tudo parece certo por coincidência, e num
+  servidor em UTC todo horário sai três horas adiantado.
 - **Voto com valor em branco é registro, não ausência.** A fonte tem 466 deles
   em 2026; comparações usam `!== undefined`, nunca truthiness.
 
@@ -180,13 +204,17 @@ fora da tabela não geram categoria: a votação fica sem tema até revisão.
    as três variáveis preenchidas nada sai, e a interface distingue "não está
    configurado" de "o envio falhou" em vez de dizer que mandou. Em
    desenvolvimento o link aparece no log do servidor, nunca na resposta.
-2. **Sincronizar votações para o banco**, com `dedup_key` nas notificações
-   para não reenviar evento antigo como novo (PRD §8.3). Hoje as votações são
-   lidas dos arquivos a cada revalidação, sem passar pelo banco.
-3. **Tela de preferências ligada ao banco.** Hoje `/preferencias` edita o
+2. **Gerar as notificações.** As votações já estão no banco; falta o passo que,
+   a cada sincronização, cruza votos novos com quem acompanha cada parlamentar
+   e cria as linhas em `notifications`, com `dedup_key` para não reenviar
+   evento antigo como novo (PRD §8.3). A sincronização também precisa de
+   agendamento — hoje roda à mão.
+3. **O painel ainda lê dos arquivos, não do banco.** Funciona, e o banco agora
+   tem os mesmos dados; trocar a fonte é outro passo.
+4. **Tela de preferências ligada ao banco.** Hoje `/preferencias` edita o
    armazenamento do navegador. Ligá-la à inscrição confirmada pede um token de
    `manage`, que o esquema já prevê mas ninguém emite ainda.
-4. **Token pendente de quem nunca confirmou não é invalidado** por um pedido
+5. **Token pendente de quem nunca confirmou não é invalidado** por um pedido
    novo para o mesmo endereço. Não expõe nada de ninguém — o canal nunca foi
    confirmado e nada é enviado antes disso — mas quem clicar num link antigo
    confirma as escolhas do pedido mais recente, não as suas.
