@@ -38,9 +38,11 @@ npm run sync:votacoes -- 2025    # outro ano
 npm run sync:votacoes -- --dry   # só relata, não grava
 ```
 
-Lê os mesmos arquivos anuais que o painel e reusa `src/lib/camara/bulk-source.ts`
-para a leitura e a classificação — o banco e a tela não podem dar respostas
-diferentes para "que tipo de objeto foi votado". É idempotente (só upsert) e
+Reusa `src/lib/camara/bulk-source.ts` para a leitura e a classificação. O
+painel lê do banco (`src/lib/db/feed.ts`), então a tela mostra exatamente o que
+gerou os avisos: mesma classificação, mesmos temas, mesmos horários. A situação
+da tramitação só existe na API REST, e a sincronização a busca só para as
+proposições que aparecem no painel. É idempotente (só upsert) e
 registra cada execução em `sync_runs`. Para antes de gravar se muitas votações
 nominais aparecerem sem voto individual no arquivo: isso indica download
 truncado, e gravar faria a interface dizer "sem registro" sobre voto real.
@@ -157,10 +159,12 @@ reler antes de mexer na camada de dados.
 ## Classificação temática
 
 Vem do cadastro oficial da proposição (`/proposicoes/{id}/temas`), nunca de IA.
-A Câmara tem 32 temas e o Observa tem 8 categorias; o mapeamento está em
-`src/lib/camara/topic-map.ts`, com confiança `alta` para correspondência direta
-e `media` quando o tema oficial é mais amplo que a categoria. Temas oficiais
-fora da tabela não geram categoria: a votação fica sem tema até revisão.
+A Câmara tem 32 temas e o Observa tem 13 categorias, mais "Outros"; o
+mapeamento está em `src/lib/camara/topic-map.ts`, com confiança `alta` para
+correspondência direta e `media` quando o tema oficial é mais amplo que a
+categoria. Quando nenhum tema oficial da proposição corresponde a uma
+categoria, ou ela não tem tema, a votação vai para "Outros" — não para a
+categoria mais parecida.
 
 ## Regras de integridade codificadas
 
@@ -202,10 +206,25 @@ fora da tabela não geram categoria: a votação fica sem tema até revisão.
   nas votações nominais. Homenagens fica de fora de propósito.
 - **Nenhum tema marcado significa todos.** É o padrão de quem não quer
   escolher.
-- **Votação sem tema atribuído nunca é escondida por filtro de tema.** Omitir
-  um voto real do parlamentar porque a nossa classificação falhou faria o
-  usuário concluir que ele não votou. Entre mostrar algo fora do tema e
-  esconder um voto que existe, mostramos.
+- **Votação sem categoria vai para "Outros".** Antes ela passava por qualquer
+  filtro de tema, e quem escolhia só "Saúde" recebia também homenagens e
+  projetos sem tema. Agora só chega a quem marcou "Outros" ou não filtrou
+  tema. A única votação que ainda passa por qualquer filtro é a que a
+  sincronização não classificou ainda: omitir um voto real por atraso nosso
+  faria o usuário concluir que o parlamentar não votou.
+- **Um pedido novo aposenta o link anterior.** Os links de confirmação e de
+  mudança ainda não usados do mesmo endereço são apagados quando sai outro.
+  Senão um link velho confirmaria escolhas que a mensagem dele não mostrava,
+  ou aplicaria escolhas antigas por cima das novas.
+- **Trocar de e-mail manda ao endereço antigo um link para encerrar.** Sem
+  ele, o antigo continuaria recebendo. Mas encerrar direto deixaria qualquer
+  um apagar a inscrição de outra pessoa digitando o endereço dela, então só o
+  clique no link encerra. A mensagem não mostra o endereço novo.
+- **Inscrição nunca confirmada some sozinha.** Um job diário
+  (`apagar_nao_confirmadas`, migração 0010) apaga quem não tem canal
+  verificado 7 dias depois que o último link expirou, e os links usados ou
+  vencidos há mais de 30 dias. Quem confirmou e saiu da lista fica: a linha é
+  o que impede reenviar.
 - **Horário da fonte ganha fuso na entrada.** Os arquivos da Câmara trazem
   horário de Brasília sem dizer isso. `sourceTimeToIso` converte no momento da
   leitura, pelo fuso nomeado (o Brasil teve horário de verão até 2019). Sem
@@ -263,20 +282,7 @@ fora da tabela não geram categoria: a votação fica sem tema até revisão.
    `npm run segredo:envio`. Se o endereço do site mudar, é preciso reagendar
    o job `observa-enviar` com a URL nova. Enquanto o item 1 não for feito,
    tudo isso funciona, mas só chega e-mail para a conta do Resend.
-3. **Votação sem categoria ainda passa por qualquer filtro de tema.** Com as
-   13 categorias, sobram 3 das 159 nominais de 2026 sem categoria: duas sem
-   tema oficial nenhum (PLP 77/2026, recente demais) e uma homenagem. Era 24
-   com as 8 iniciais, e quem filtrava só "saúde" recebia 23 avisos; agora 10.
-   Separar "tema fora das categorias" de "sem tema nenhum" fecharia o resto.
-4. **O painel ainda lê dos arquivos, não do banco.** Funciona, e o banco agora
-   tem os mesmos dados; trocar a fonte é outro passo.
-5. **Trocar o e-mail nas preferências inscreve o endereço novo, mas não
-   desfaz o antigo.** Desfazer exigiria provar posse do antigo também; hoje a
-   saída dele é pelo link de descadastro ou de exclusão.
-6. **Token pendente de quem nunca confirmou não é invalidado** por um pedido
-   novo para o mesmo endereço. Não expõe nada de ninguém — o canal nunca foi
-   confirmado e nada é enviado antes disso — mas quem clicar num link antigo
-   confirma as escolhas do pedido mais recente, não as suas.
-7. **Inscrição nunca confirmada fica guardada.** Não recebe nada, mas o
-   endereço continua no banco depois que o link expira. Pela minimização da
-   LGPD, deveria ser apagada sozinha alguns dias após a expiração.
+3. **Nome "Outros" aparece em dois sentidos.** É a categoria de tema e
+   também o balde de votos da fonte (abstenção, obstrução, artigo 17) na
+   contagem de cada votação. A tela distingue pelo lugar, mas vale renomear
+   um dos dois.
