@@ -1,0 +1,56 @@
+# Sincroniza deputados e votações da Câmara para o banco, e gera as
+# notificações das votações novas.
+#
+# Roda aqui, e não como função do app, porque a sincronização lê dezenas de
+# megabytes de arquivos e usa ~1,2 GB de memória por ~30 s — pesado demais
+# para uma função serverless, trivial para um runner.
+#
+# É idempotente (só upsert, avisos com dedup_key), então rodar a mais não
+# duplica nada. Por isso duas vezes por dia: os arquivos da Câmara fecham no
+# dia anterior mas o horário de publicação não é garantido.
+
+name: Sincronizar votações
+
+on:
+  schedule:
+    # 07:00 e 19:00 em Brasília (UTC-3). A das 7h vem antes do resumo diário
+    # das 8h. O GitHub pode atrasar execuções agendadas em alguns minutos.
+    - cron: "0 10,22 * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+# Duas execuções ao mesmo tempo não corrompem nada, mas não fazem sentido.
+concurrency:
+  group: sincronizar-votacoes
+  cancel-in-progress: false
+
+jobs:
+  sincronizar:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    env:
+      # Pública por natureza: é a mesma do .env.example.
+      NEXT_PUBLIC_SUPABASE_URL: https://makpagwocsdhwqaevyqm.supabase.co
+      # Segredo. Cadastre em Settings → Secrets and variables → Actions.
+      SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - run: npm ci
+
+      # A API REST de deputados cai com frequência. Se cair, as votações
+      # sincronizam mesmo assim: quem votou e não está na base entra pelo
+      # próprio arquivo de votos.
+      - name: Deputados em exercício
+        run: npm run sync:deputados
+        continue-on-error: true
+
+      - name: Votações, votos, temas e notificações
+        run: npm run sync:votacoes
