@@ -1,26 +1,171 @@
 @import "tailwindcss";
 
+/* =========================================================================
+   Observa — tokens visuais
+   Referência: PRD §9.1. Dark mode é o padrão do produto.
+
+   Cores de voto: Sim em verde e Não em vermelho, por decisão de produto,
+   acompanhando a convenção do painel de votação da própria Câmara. É uma
+   exceção deliberada à orientação do PRD §9.1 de não usar cores com carga
+   avaliativa, e por isso duas salvaguardas são obrigatórias:
+   - todo uso de cor de voto vem com rótulo textual E marcador de forma, já
+     que verde/vermelho é o par de pior distinção para daltonismo;
+   - a cor qualifica o VALOR do voto, nunca o mérito: o texto em nenhum lugar
+     traduz "Sim" como "a favor do projeto" (PRD §8.1).
+   Partido e ideologia seguem sem representação cromática.
+   ========================================================================= */
+
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  /* Superfícies — fundo quase preto, camadas em cinzas escuros */
+  --bg: #0a0a0b;
+  --surface: #101012;
+  --surface-2: #16161a;
+  --surface-3: #1d1d22;
+
+  /* Bordas finas e divisões discretas */
+  --border: #26262c;
+  --border-strong: #35353d;
+
+  /* Texto */
+  --text: #ededf0;
+  --text-muted: #9c9ca7;
+  --text-dim: #6c6c77;
+
+  /* Acento institucional — marca, links, foco, ação primária.
+     Deliberadamente âmbar: não corresponde à identidade de partidos
+     relevantes e não é usado para qualificar votos. */
+  --accent: #e0a33e;
+  --accent-hover: #edb555;
+  --accent-contrast: #15100a;
+
+  /* Anel de foco visível */
+  --focus: #e0a33e;
+
+  /* Valores de voto. Tons escolhidos para contraste alto sobre o fundo quase
+     preto e para suportar texto escuro dentro dos segmentos da barra. */
+  --vote-yes: #45b86b;
+  --vote-no: #ef5f6b;
+  --vote-abstention: #8f8f9a;
+  --vote-obstruction: #c2b280;
+  --vote-other: #7f7f8a;
+  /* Ausência de registro não é um voto: sem cor própria, só traço tracejado */
+  --vote-unrecorded: #5a5a64;
+
+  /* Sinalização de qualidade do dado (confiança de classificação, avisos) */
+  --flag: #c2b280;
+
+  /* Estado operacional do sistema (sincronização). Não qualifica votos. */
+  --status: #4ea87a;
+
+  /* Painéis: a referência usa caixas arredondadas discretas, não listas corridas */
+  --panel-radius: 14px;
+
+  /* Aviso de dados de teste — precisa destoar do resto da interface */
+  --mock: #d4683c;
+  --mock-surface: #231310;
 }
 
 @theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+  --color-bg: var(--bg);
+  --color-surface: var(--surface);
+  --color-surface-2: var(--surface-2);
+  --color-surface-3: var(--surface-3);
+
+  --color-border-subtle: var(--border);
+  --color-border-strong: var(--border-strong);
+
+  --color-text: var(--text);
+  --color-text-muted: var(--text-muted);
+  --color-text-dim: var(--text-dim);
+
+  --color-accent: var(--accent);
+  --color-accent-hover: var(--accent-hover);
+  --color-accent-contrast: var(--accent-contrast);
+
+  --color-vote-yes: var(--vote-yes);
+  --color-vote-no: var(--vote-no);
+  --color-vote-abstention: var(--vote-abstention);
+  --color-vote-obstruction: var(--vote-obstruction);
+  --color-vote-other: var(--vote-other);
+  --color-vote-unrecorded: var(--vote-unrecorded);
+
+  --color-flag: var(--flag);
+  --color-status: var(--status);
+  --color-mock: var(--mock);
+  --color-mock-surface: var(--mock-surface);
+
+  --font-sans: var(--font-geist-sans), ui-sans-serif, system-ui, sans-serif;
+  --font-serif: var(--font-source-serif), ui-serif, Georgia, serif;
+  --font-mono: var(--font-geist-mono), ui-monospace, monospace;
+
+  --radius-panel: var(--panel-radius);
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+* {
+  border-color: var(--border);
 }
 
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+  font-feature-settings: "tnum" 1; /* dados tabulares alinhados */
+}
+
+/* Foco visível em todo elemento interativo (PRD §9.1) */
+:where(a, button, input, select, textarea, [tabindex]):focus-visible {
+  outline: 2px solid var(--focus);
+  outline-offset: 2px;
+  border-radius: 2px;
+}
+
+::selection {
+  background: var(--accent);
+  color: var(--accent-contrast);
+}
+
+/* Barras de rolagem discretas: a padrão clara destoa da interface escura */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: var(--border-strong) transparent;
+}
+
+::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--border-strong);
+  border: 3px solid transparent;
+  background-clip: content-box;
+  border-radius: 999px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--text-dim);
+  background-clip: content-box;
+}
+
+/* Rolagem horizontal por toque, sem a barra ocupando altura na interface */
+.no-scrollbar {
+  scrollbar-width: none;
+}
+
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
+  }
 }
