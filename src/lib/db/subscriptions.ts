@@ -157,6 +157,22 @@ async function issueToken(
     payload: Preferences | null;
   },
 ): Promise<string> {
+  // Um pedido novo aposenta os links de confirmação e de mudança ainda não
+  // usados do mesmo endereço. Senão um link velho continuaria valendo: num
+  // canal novo ele confirmaria as escolhas do pedido mais recente, que não
+  // são as que a mensagem dele mostrava; num canal confirmado, aplicaria
+  // escolhas antigas por cima das novas. O link de exclusão é outro assunto
+  // e não é tocado.
+  if (args.purpose !== "delete") {
+    const { error } = await db
+      .from("magic_tokens")
+      .delete()
+      .eq("channel_id", args.channelId)
+      .in("purpose", ["verify", "apply"])
+      .is("used_at", null);
+    if (error) throw new Error(`Falha ao aposentar links antigos: ${error.message}`);
+  }
+
   const token = randomBytes(32).toString("base64url");
   const { error } = await db.from("magic_tokens").insert({
     token_hash: hashToken(token),

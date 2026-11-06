@@ -23,7 +23,7 @@ const COPY: Record<Confirmation["status"], { title: string; body: string }> = {
   invalido: {
     title: "Não foi possível confirmar",
     body:
-      "O link pode ter expirado, já ter sido usado ou estar incompleto. Refaça a inscrição para receber um novo.",
+      "O link pode ter expirado, já ter sido usado ou estar incompleto. Se você pediu de novo depois, só o e-mail mais recente vale. Refaça a inscrição para receber um link novo.",
   },
 };
 
