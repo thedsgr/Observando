@@ -75,7 +75,23 @@ type Rule = {
    vêm antes das mais genéricas. */
 const RULES: Rule[] = [
   { pattern: /\bredaç(ão|ao) final\b/i, kind: "redacao-final", confidence: "alta" },
-  { pattern: /\bsubstitutivo\b/i, kind: "substitutivo", confidence: "alta" },
+  // O objeto no começo da frase manda. "Rejeitada a Emenda ao Substitutivo"
+  // votou a emenda; o substitutivo ali é só aquilo a que ela se refere. Sem
+  // esta regra antes da de substitutivo, onze votações de 2026 eram
+  // apresentadas como votação do texto inteiro. A exceção do lookahead é
+  // "Subemenda Substitutiva" e "Emenda Aglutinativa Substitutiva", que trocam
+  // o texto todo e são substitutivo de fato.
+  {
+    pattern:
+      /^\s*(?:aprovad|rejeitad)[oa]s?\s+(?:a|as)\s+(?:sub)?emendas?\b(?!\s+(?:aglutinativa\s+)?substitutiv)/i,
+    kind: "emenda",
+    confidence: "alta",
+  },
+  // Feminino também: a Câmara escreve "Subemenda Substitutiva" e "Emenda
+  // Aglutinativa Substitutiva", e as duas trocam o texto inteiro. Só com o
+  // masculino, quatro votações nominais de 2026 viravam "texto principal" e
+  // uma de PEC virava "emenda: alteração pontual".
+  { pattern: /\bsubstitutiv[oa]s?\b/i, kind: "substitutivo", confidence: "alta" },
   { pattern: /\bdestaque|votaç(ão|ao) em separado\b/i, kind: "destaque", confidence: "alta" },
   { pattern: /\bemenda(s)?\b/i, kind: "emenda", confidence: "alta" },
   { pattern: /\brequerimento\b/i, kind: "requerimento", confidence: "alta" },
@@ -95,9 +111,20 @@ const RULES: Rule[] = [
   },
 ];
 
+/**
+ * "Aprovado o Projeto de Lei nº 6.139, de 2023, ressalvado o destaque."
+ *
+ * A ressalva diz o que NÃO entrou nesta votação — os destaques ficam para
+ * votações separadas. Lida como pista, ela fazia a regra de destaque casar e a
+ * votação que aprovou o texto virava "um trecho, não a proposta inteira": o
+ * contrário do que aconteceu. Seis votações nominais de 2026 caíam nisso.
+ */
+const RESSALVA = /,?\s*ressalvad[oa]s?(?:\(s\))?\s[^.;]*/gi;
+
 export function deriveObjectKind(description: string): ObjectKindAssignment | null {
+  const relevant = description.replace(RESSALVA, "");
   for (const rule of RULES) {
-    const match = rule.pattern.exec(description);
+    const match = rule.pattern.exec(relevant);
     if (match) {
       return { kind: rule.kind, confidence: rule.confidence, basis: match[0] };
     }
