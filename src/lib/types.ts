@@ -23,7 +23,12 @@ export type TopicId =
   | "seguranca-publica"
   | "direitos-sociais"
   | "transporte"
-  | "tecnologia";
+  | "tecnologia"
+  | "justica"
+  | "politica"
+  | "campo"
+  | "governo"
+  | "cidades";
 
 export type Topic = {
   id: TopicId;

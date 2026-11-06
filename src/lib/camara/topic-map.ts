@@ -5,7 +5,7 @@ import type { Confidence, TopicAssignment, TopicId } from "@/lib/types";
  * Mapeamento dos temas oficiais da Câmara para a taxonomia do produto.
  *
  * A Câmara tem 32 temas (`/referencias/proposicoes/codTema`) e o Observa tem
- * 8 categorias. O PRD §8.2 manda priorizar metadado oficial e regra
+ * 13 categorias. O PRD §8.2 manda priorizar metadado oficial e regra
  * determinística, então a classificação sai inteiramente desta tabela — não há
  * IA envolvida.
  *
@@ -16,13 +16,12 @@ import type { Confidence, TopicAssignment, TopicId } from "@/lib/types";
  *
  * Temas oficiais ausentes desta tabela não geram categoria alguma: a votação
  * fica sem tema até revisão, em vez de receber um palpite (PRD §8.2).
- * Temas deliberadamente não mapeados: Administração Pública (34), Arte/Cultura
- * e Religião (35), Esporte e Lazer (39), Cidades e Desenvolvimento Urbano (41),
- * Direito Civil (42), Estrutura Fundiária (51), Processo Legislativo (53),
- * Relações Internacionais (55), Turismo (60), Agricultura (64), Indústria e
- * Comércio (66), Direito Constitucional (68), Homenagens (72), Política e
- * Eleições (74), Direito e Justiça (76), Ciências Exatas (85) e Ciências
- * Sociais (86).
+ * Temas deliberadamente não mapeados: Arte/Cultura e Religião (35), Esporte e
+ * Lazer (39), Relações Internacionais (55), Turismo (60), Homenagens (72),
+ * Ciências Exatas (85) e Ciências Sociais (86). Nenhum aparece sozinho numa
+ * votação nominal de 2026, então não mudam aviso. Homenagens é o maior grupo
+ * do ano (284 votações só com ele) e fica de fora de propósito: lei que dá
+ * título a município não é assunto que alguém queira receber.
  */
 const THEME_TO_TOPIC: Record<number, { topicId: TopicId; confidence: Confidence }> = {
   56: { topicId: "saude", confidence: "alta" },
@@ -42,6 +41,21 @@ const THEME_TO_TOPIC: Record<number, { topicId: TopicId; confidence: Confidence 
   67: { topicId: "direitos-sociais", confidence: "media" }, // Defesa do Consumidor
   54: { topicId: "meio-ambiente", confidence: "media" }, // Energia e Recursos Hídricos
   37: { topicId: "tecnologia", confidence: "media" }, // Comunicações
+  66: { topicId: "economia", confidence: "media" }, // Indústria, Comércio e Serviços
+
+  // Categorias acrescentadas à taxonomia inicial. Pesos nas votações
+  // nominais de 2026 que antes ficavam sem categoria: Direito Civil 15,
+  // Política e Eleições 8, Administração Pública 3, Agricultura 2, Estrutura
+  // Fundiária 2, Cidades 2, Direito e Justiça 2.
+  76: { topicId: "justica", confidence: "alta" }, // Direito e Justiça
+  42: { topicId: "justica", confidence: "media" }, // Direito Civil e Processual Civil
+  68: { topicId: "justica", confidence: "media" }, // Direito Constitucional
+  74: { topicId: "politica", confidence: "alta" }, // Política, Partidos e Eleições
+  53: { topicId: "politica", confidence: "media" }, // Processo Legislativo e Atuação Parlamentar
+  64: { topicId: "campo", confidence: "alta" }, // Agricultura, Pecuária, Pesca e Extrativismo
+  51: { topicId: "campo", confidence: "media" }, // Estrutura Fundiária
+  34: { topicId: "governo", confidence: "alta" }, // Administração Pública
+  41: { topicId: "cidades", confidence: "alta" }, // Cidades e Desenvolvimento Urbano
 };
 
 /**

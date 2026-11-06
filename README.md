@@ -189,6 +189,11 @@ fora da tabela não geram categoria: a votação fica sem tema até revisão.
   pode digitar o endereço de outra pessoa no onboarding, então quem recebe sem
   ter pedido precisa saber na primeira leitura que ignorar basta. O e-mail de
   mudança mostra o que mudaria, para a pessoa reconhecer — ou não — o pedido.
+- **13 categorias, não 8.** As 8 do PRD mais Justiça, Política e eleições,
+  Campo e agricultura, Governo e serviço público e Cidades. Sem elas, votações
+  com tema oficial conhecido — Direito Civil, Política e Eleições — chegavam ao
+  filtro como "sem tema" e passavam por qualquer escolha. Escolhidas pelo peso
+  nas votações nominais. Homenagens fica de fora de propósito.
 - **Nenhum tema marcado significa todos.** É o padrão de quem não quer
   escolher.
 - **Votação sem tema atribuído nunca é escondida por filtro de tema.** Omitir
@@ -225,12 +230,11 @@ fora da tabela não geram categoria: a votação fica sem tema até revisão.
    passo que lê as vencidas, monta a mensagem com os votos dos parlamentares
    acompanhados (agrupando por pessoa no diário e no semanal) e envia. A
    sincronização também precisa de agendamento — hoje roda à mão.
-3. **Filtro de tema no aviso deixa passar muito.** Votação sem tema passa por
-   qualquer filtro, como no painel. No painel isso é certo — esconder voto real
-   por falha de classificação engana. No aviso o efeito é outro: num teste,
-   quem escolheu só "saúde" recebeu 23 avisos de 127, e 16 deles passaram só
-   por não ter tema. 24 das 159 nominais de 2026 não têm tema. É decisão de
-   produto se o aviso deve seguir a regra do painel.
+3. **Votação sem categoria ainda passa por qualquer filtro de tema.** Com as
+   13 categorias, sobram 3 das 159 nominais de 2026 sem categoria: duas sem
+   tema oficial nenhum (PLP 77/2026, recente demais) e uma homenagem. Era 24
+   com as 8 iniciais, e quem filtrava só "saúde" recebia 23 avisos; agora 10.
+   Separar "tema fora das categorias" de "sem tema nenhum" fecharia o resto.
 4. **O painel ainda lê dos arquivos, não do banco.** Funciona, e o banco agora
    tem os mesmos dados; trocar a fonte é outro passo.
 5. **Tela de preferências ligada ao banco.** Hoje `/preferencias` edita o

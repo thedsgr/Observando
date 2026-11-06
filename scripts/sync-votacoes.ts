@@ -368,6 +368,22 @@ async function main() {
         });
       }
     }
+    // Recalcula em vez de acumular. Upsert só acrescenta: se um mapeamento for
+    // retirado ou corrigido em topic-map.ts, o vínculo antigo ficaria no banco
+    // para sempre, e o aviso seguiria a regra velha. Só os vínculos vindos do
+    // metadado oficial são apagados — uma classificação futura por outra
+    // origem ('regra', 'ia') não é desfeita pela sincronização.
+    let removidos = 0;
+    for (const chunk of chunks([...votingIds.values()], CHUNK)) {
+      const { error, count } = await db
+        .from("voting_topics")
+        .delete({ count: "exact" })
+        .eq("origin", "metadado-oficial")
+        .in("voting_id", chunk);
+      if (error) throw new Error(`voting_topics (limpeza): ${error.message}`);
+      removidos += count ?? 0;
+    }
+    console.log(`  temas: ${removidos} vínculos anteriores recalculados`);
     await upsertAll(db, "voting_topics", votingTopics, "voting_id,topic_id");
 
     // --- notificações -------------------------------------------------------
