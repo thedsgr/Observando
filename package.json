@@ -8,7 +8,8 @@
     "start": "next start",
     "lint": "eslint",
     "sync:deputados": "node scripts/sync-deputados.mjs",
-    "sync:votacoes": "tsx scripts/sync-votacoes.ts"
+    "sync:votacoes": "tsx scripts/sync-votacoes.ts",
+    "segredo:envio": "node scripts/definir-segredo-envio.mjs"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.119.0",
