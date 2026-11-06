@@ -1,0 +1,15 @@
+-- =============================================================================
+-- Categoria "Outros".
+--
+-- Votação cujo tema oficial não corresponde a nenhuma categoria — ou que não
+-- tem tema oficial — ficava sem categoria e, por isso, passava por qualquer
+-- filtro de tema: quem escolhia só "Saúde" recebia também homenagens e
+-- projetos sem tema. Agora ela vai para "Outros" (a sincronização atribui,
+-- ver src/lib/camara/topic-map.ts) e só chega a quem marcou "Outros" ou não
+-- filtrou tema nenhum.
+--
+-- A regra de `generate_notifications` que deixa passar votação sem vínculo de
+-- tema continua: depois da sincronização, nenhuma fica sem; uma sem é uma
+-- ainda não classificada, e omitir aviso por atraso nosso seria pior.
+-- =============================================================================
+insert into topics (id, label, position) values ('outros', 'Outros', 14);

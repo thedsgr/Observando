@@ -48,7 +48,7 @@ export function CoveragePanel({
       note: "o tema oficial é mais amplo que a categoria do produto",
     },
     {
-      label: "Sem tema",
+      label: "Em Outros",
       value: stats.withoutTopic,
       note: "nenhum tema oficial corresponde às categorias do Observa",
     },

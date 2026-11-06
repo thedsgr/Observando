@@ -314,6 +314,14 @@ export async function readYear(year: number): Promise<BulkYear> {
 }
 
 /**
+ * Recorte do painel: as votações mais recentes e, além delas, as mais
+ * recentes com voto individual. Mora aqui porque o painel (que lê do banco) e
+ * a sincronização (que busca a situação das proposições exibidas) precisam
+ * concordar sobre quais são.
+ */
+export const PANEL_WINDOW = { recent: 40, nominal: 20 } as const;
+
+/**
  * Recorte do feed: as mais recentes E as nominais mais recentes.
  *
  * As duas listas, não uma: nominais são 2% do total e quase sempre mais

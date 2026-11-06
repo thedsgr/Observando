@@ -14,8 +14,10 @@ import type { Confidence, TopicAssignment, TopicId } from "@/lib/types";
  * - `media`: o tema oficial é mais amplo que a categoria, ou se divide entre
  *   mais de uma. Esses casos aparecem na interface como "a confirmar".
  *
- * Temas oficiais ausentes desta tabela não geram categoria alguma: a votação
- * fica sem tema até revisão, em vez de receber um palpite (PRD §8.2).
+ * Temas oficiais ausentes desta tabela não geram categoria: quando nenhum
+ * tema da proposição está aqui (ou ela não tem tema), a votação vai para
+ * "Outros", e não para a categoria mais parecida — palpite seria pior
+ * (PRD §8.2).
  * Temas deliberadamente não mapeados: Arte/Cultura e Religião (35), Esporte e
  * Lazer (39), Relações Internacionais (55), Turismo (60), Homenagens (72),
  * Ciências Exatas (85) e Ciências Sociais (86). Nenhum aparece sozinho numa
@@ -60,8 +62,9 @@ const THEME_TO_TOPIC: Record<number, { topicId: TopicId; confidence: Confidence 
 
 /**
  * Converte os temas oficiais de uma proposição nas categorias do produto.
- * Uma votação pode receber múltiplos temas (PRD §8.2) e temas não mapeados
- * simplesmente não aparecem.
+ * Uma votação pode receber múltiplos temas (PRD §8.2). Temas não mapeados não
+ * aparecem; se nenhum for mapeado, a votação recebe "Outros", com os temas
+ * oficiais que tinha (se tinha) guardados para auditoria.
  */
 export function mapThemes(themes: RawTheme[]): TopicAssignment[] {
   const byTopic = new Map<TopicId, TopicAssignment>();
@@ -80,6 +83,20 @@ export function mapThemes(themes: RawTheme[]): TopicAssignment[] {
       confidence: mapped.confidence,
       officialTheme: theme.tema,
     });
+  }
+
+  if (byTopic.size === 0) {
+    const official = themes.map((theme) => theme.tema).filter(Boolean);
+    return [
+      {
+        topicId: "outros",
+        // Regra, não metadado: a Câmara não disse "outros", foi a ausência de
+        // correspondência que decidiu. E é certeza, não palpite.
+        origin: "regra",
+        confidence: "alta",
+        ...(official.length > 0 ? { officialTheme: official.join("; ") } : {}),
+      },
+    ];
   }
 
   return [...byTopic.values()];

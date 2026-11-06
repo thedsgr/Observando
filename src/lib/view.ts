@@ -54,11 +54,11 @@ function matchesTopics(
 ): boolean {
   if (!topicIds || topicIds.length === 0) return true;
 
-  // Votação sem nenhum tema atribuído NÃO é escondida por um filtro de tema.
-  // Esconder seria deixar de mostrar um voto real do parlamentar por falha da
-  // nossa classificação — e o usuário concluiria que ele não votou. Entre
-  // mostrar algo fora do tema e omitir um voto que existe, o PRD §8.2 (os
-  // temas priorizam, não ocultam histórico) manda mostrar.
+  // Toda votação classificada tem ao menos um tema — no mínimo "Outros". Uma
+  // sem tema nenhum é uma que a sincronização ainda não classificou, e essa
+  // não é escondida: omitir um voto real por atraso nosso faria o usuário
+  // concluir que o parlamentar não votou (PRD §8.2: os temas priorizam, não
+  // ocultam histórico).
   if (voting.topics.length === 0) return true;
 
   return voting.topics.some((topic) => topicIds.includes(topic.topicId));
@@ -122,7 +122,11 @@ export function coverageOf(items: VotingWithContext[]) {
   const lowConfidenceObject = items.filter(
     (item) => item.voting.objectKind?.confidence === "media",
   ).length;
-  const withoutTopic = items.filter((item) => item.voting.topics.length === 0).length;
+  const withoutTopic = items.filter(
+    (item) =>
+      item.voting.topics.length === 0 ||
+      item.voting.topics.every((topic) => topic.topicId === "outros"),
+  ).length;
   const uncertainTopic = items.filter((item) =>
     item.voting.topics.some((topic) => topic.confidence !== "alta"),
   ).length;

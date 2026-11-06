@@ -19,17 +19,23 @@
 import { readFileSync } from "node:fs";
 import { createClient, type SupabaseClient } from "@supabase/supabase-js";
 import {
+  PANEL_WINDOW,
   fetchCsv,
   hasIndividualVotes,
   objectKindOf,
   readYear,
   resultOf,
+  selectWindow,
   sourceTimeToIso,
   type BulkVoting,
 } from "@/lib/camara/bulk-source";
-import { propositionSourceUrl, votingSourceUrl } from "@/lib/camara/client";
+import {
+  camaraFetch,
+  propositionSourceUrl,
+  votingSourceUrl,
+} from "@/lib/camara/client";
 import { mapThemes } from "@/lib/camara/topic-map";
-import type { RawTheme } from "@/lib/camara/raw";
+import type { RawProposition, RawTheme } from "@/lib/camara/raw";
 
 function loadEnv(file: string) {
   try {
@@ -357,8 +363,9 @@ async function main() {
     for (const voting of graváveis) {
       const first = voting.propositions[0];
       const votingId = votingIds.get(voting.id);
-      if (!first || !votingId) continue;
-      for (const topic of mapThemes(themes.get(first.id) ?? [])) {
+      if (!votingId) continue;
+      // Sem proposição não há tema oficial a ler: vai para "Outros".
+      for (const topic of mapThemes(first ? themes.get(first.id) ?? [] : [])) {
         votingTopics.push({
           voting_id: votingId,
           topic_id: topic.topicId,
@@ -371,20 +378,54 @@ async function main() {
     // Recalcula em vez de acumular. Upsert só acrescenta: se um mapeamento for
     // retirado ou corrigido em topic-map.ts, o vínculo antigo ficaria no banco
     // para sempre, e o aviso seguiria a regra velha. Só os vínculos vindos do
-    // metadado oficial são apagados — uma classificação futura por outra
-    // origem ('regra', 'ia') não é desfeita pela sincronização.
+    // metadado oficial e o "Outros" (que esta mesma sincronização decide) são
+    // apagados — uma classificação futura por outra via (uma regra própria,
+    // 'ia') não é desfeita pela sincronização.
     let removidos = 0;
     for (const chunk of chunks([...votingIds.values()], CHUNK)) {
       const { error, count } = await db
         .from("voting_topics")
         .delete({ count: "exact" })
-        .eq("origin", "metadado-oficial")
+        .or("origin.eq.metadado-oficial,topic_id.eq.outros")
         .in("voting_id", chunk);
       if (error) throw new Error(`voting_topics (limpeza): ${error.message}`);
       removidos += count ?? 0;
     }
     console.log(`  temas: ${removidos} vínculos anteriores recalculados`);
     await upsertAll(db, "voting_topics", votingTopics, "voting_id,topic_id");
+
+    // --- situação das proposições do painel --------------------------------
+    // A situação da tramitação só existe na API REST, uma proposição por
+    // requisição. Buscá-la para as 4 mil referenciadas no ano seria caro e
+    // inútil: só as do painel aparecem na tela. Falha numa delas não para a
+    // sincronização — a situação fica como estava, e a interface declara
+    // "não informada" quando nunca foi lida.
+    const doPainel = [
+      ...new Set(
+        selectWindow(graváveis, PANEL_WINDOW)
+          .map((voting) => voting.propositions[0]?.id)
+          .filter((id): id is number => id !== undefined),
+      ),
+    ];
+    let situacoes = 0;
+    for (const lote of chunks(doPainel, 4)) {
+      await Promise.all(
+        lote.map(async (id) => {
+          const raw = await camaraFetch<RawProposition>(`/proposicoes/${id}`).catch(
+            () => null,
+          );
+          const status = raw?.statusProposicao?.descricaoSituacao ?? null;
+          if (!status) return;
+          const { error } = await db
+            .from("propositions")
+            .update({ status })
+            .eq("house_id", HOUSE)
+            .eq("external_id", String(id));
+          if (!error) situacoes += 1;
+        }),
+      );
+    }
+    console.log(`  situação lida de ${situacoes} de ${doPainel.length} proposições do painel`);
 
     // --- notificações -------------------------------------------------------
     // Depois de tudo gravado, e não antes: a regra de tema precisa dos

@@ -1,14 +1,12 @@
 import { NextResponse } from "next/server";
-import { fetchVotes } from "@/lib/camara";
-import { CamaraApiError } from "@/lib/camara/client";
+import { fetchVotes } from "@/lib/db/feed";
 
 /**
  * Votos individuais de uma votação, sob demanda.
  *
  * Existe para que o feed não precise trazer centenas de registros por votação
- * antes de o usuário abrir os detalhes. A chamada à API oficial passa pelo
- * cache de dados do Next, então abrir a mesma votação de novo não gera tráfego
- * novo contra a Câmara.
+ * antes de o usuário abrir os detalhes. Lê do banco, já com o parlamentar de
+ * cada voto, e passa pelo cache de dados do Next.
  */
 export async function GET(
   _request: Request,
@@ -17,13 +15,16 @@ export async function GET(
   const { id } = await params;
 
   try {
-    const votes = await fetchVotes(id);
+    const byVoting = await fetchVotes([id]);
+    const votes = byVoting[id];
+    if (!votes) {
+      return NextResponse.json({ error: "Votação desconhecida." }, { status: 404 });
+    }
     return NextResponse.json({ votes });
-  } catch (error) {
-    const status = error instanceof CamaraApiError ? 502 : 500;
+  } catch {
     return NextResponse.json(
-      { error: "Não foi possível ler os votos na fonte oficial." },
-      { status },
+      { error: "Não foi possível ler os votos." },
+      { status: 500 },
     );
   }
 }

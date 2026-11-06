@@ -20,10 +20,17 @@ export function TopicChip({ assignment }: { assignment: TopicAssignment }) {
   const source = assignment.officialTheme
     ? `${ORIGIN_LABEL[assignment.origin]}: “${assignment.officialTheme}”`
     : ORIGIN_LABEL[assignment.origin];
+  // "Outros" não foi atribuído por correspondência, e sim pela falta dela.
+  const title =
+    assignment.topicId === "outros"
+      ? assignment.officialTheme
+        ? `Nenhum tema oficial desta proposição corresponde às categorias do Observa. Temas oficiais: ${assignment.officialTheme}`
+        : "A fonte não informa tema oficial para esta votação."
+      : `Atribuído por ${source} · confiança ${assignment.confidence}`;
 
   return (
     <span
-      title={`Atribuído por ${source} · confiança ${assignment.confidence}`}
+      title={title}
       className={[
         "inline-flex items-center gap-1.5 rounded-full border px-2.5 py-0.5 text-xs",
         uncertain
@@ -41,11 +48,14 @@ export function TopicChip({ assignment }: { assignment: TopicAssignment }) {
   );
 }
 
-/** Estado para votações sem tema atribuível pelo metadado oficial. */
+/**
+ * Votação ainda não classificada. Depois da sincronização toda votação tem ao
+ * menos "Outros"; isto cobre o intervalo antes dela.
+ */
 export function NoTopicChip() {
   return (
     <span
-      title="Os temas oficiais desta proposição não correspondem a nenhuma categoria do Observa, ou a proposição não tem temas cadastrados. A votação fica sem categoria até revisão."
+      title="Esta votação ainda não foi classificada por tema."
       className="inline-flex items-center rounded-full border border-dashed border-border-strong px-2.5 py-0.5 text-xs text-text-dim"
     >
       Sem tema

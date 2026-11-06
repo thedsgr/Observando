@@ -28,7 +28,8 @@ export type TopicId =
   | "politica"
   | "campo"
   | "governo"
-  | "cidades";
+  | "cidades"
+  | "outros";
 
 export type Topic = {
   id: TopicId;

@@ -1,12 +1,11 @@
 import { Suspense } from "react";
 import { Home } from "@/components/home";
 import { FeedSkeleton } from "@/components/states";
-import { fetchDeputies, fetchRecentVotings } from "@/lib/camara";
+import { fetchDeputies, fetchRecentVotings } from "@/lib/db/feed";
 
 /**
- * A espinha dorsal vem dos arquivos anuais de dados abertos, que dizem quais
- * votações têm voto individual sem uma requisição por votação. A API REST
- * entra só para situação da proposição, temas e votos sob demanda.
+ * Tudo vem do banco, que a sincronização preenche a partir dos arquivos
+ * anuais da Câmara (ver src/lib/db/feed.ts).
  *
  * `syncedAt` é quando a fonte foi lida; `coverageEnd` é até onde o arquivo
  * vai. São coisas diferentes e a interface mostra as duas (PRD §5.6, §8.3).

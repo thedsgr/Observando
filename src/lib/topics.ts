@@ -9,6 +9,7 @@ import type { Topic } from "@/lib/types";
  * Civil, Política e Eleições — chegavam ao filtro como se não tivessem tema e
  * passavam por qualquer escolha. Foram escolhidas pelo peso nas votações
  * nominais, as que geram aviso, e com nome que dispensa conhecer o jargão.
+ * "Outros" fecha a lista: é para onde vai o que nenhuma delas cobre.
  */
 export const TOPICS: Topic[] = [
   { id: "saude", label: "Saúde" },
@@ -24,6 +25,10 @@ export const TOPICS: Topic[] = [
   { id: "campo", label: "Campo e agricultura" },
   { id: "governo", label: "Governo e serviço público" },
   { id: "cidades", label: "Cidades" },
+  // Votação cujo tema oficial não corresponde a nenhuma categoria acima, ou
+  // que não tem tema oficial. Antes ela ficava sem categoria e passava por
+  // qualquer filtro; agora só chega a quem escolheu "Outros" ou todos os temas.
+  { id: "outros", label: "Outros" },
 ];
 
 export function topicLabel(id: Topic["id"]): string | undefined {
