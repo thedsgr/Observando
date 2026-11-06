@@ -3,6 +3,7 @@ import { cacheLife } from "next/cache";
 import { REVALIDATE_SECONDS } from "@/lib/camara/client";
 import { PANEL_WINDOW } from "@/lib/camara/bulk-source";
 import { publicDb } from "@/lib/db/client";
+import { OTHER_VOTES } from "@/lib/vote-style";
 import type {
   ClassificationOrigin,
   Confidence,
@@ -110,12 +111,14 @@ function toItem(row: VotingRow, syncedAt: string): VotingWithContext {
       syncedAt,
     },
     proposition,
-    // Três baldes, como o arquivo entrega. `Outros` é agregado da fonte, não
-    // valor de voto — ver a nota em `VotingWithContext`.
+    // Três baldes, como o arquivo entrega. O terceiro é agregado da fonte,
+    // não valor de voto — ver a nota em `VotingWithContext`. Chama "Outros
+    // votos", e não "Outros" como na fonte, para não se confundir com a
+    // categoria de tema "Outros".
     tally: [
       { value: "Sim", count: row.votes_yes },
       { value: "Não", count: row.votes_no },
-      { value: "Outros", count: row.votes_other },
+      { value: OTHER_VOTES, count: row.votes_other },
     ].filter((entry) => entry.count > 0),
     recordedVotes,
   };

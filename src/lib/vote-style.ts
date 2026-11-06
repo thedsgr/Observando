@@ -10,6 +10,13 @@
  * traduz "Sim" como "a favor do projeto" (PRD §8.1).
  */
 
+/**
+ * Rótulo do balde agregado da contagem (abstenção, obstrução e artigo 17
+ * juntos). Na fonte ele se chama "Outros"; aqui leva "votos" para não se
+ * confundir com a categoria de tema "Outros".
+ */
+export const OTHER_VOTES = "Outros votos";
+
 export type Marker = "dot" | "ring" | "square" | "diamond" | "bar" | "dashed";
 
 export type VoteStyle = {

@@ -156,12 +156,13 @@ export type VotingWithContext = {
   voting: Voting;
   proposition: Proposition | null;
   /**
-   * Contagem vinda do arquivo anual, em três baldes: `Sim`, `Não` e `Outros`.
+   * Contagem vinda do arquivo anual, em três baldes: `Sim`, `Não` e `Outros
+   * votos` (na fonte, só "Outros").
    *
-   * `Outros` é um agregado da fonte — reúne abstenção, obstrução e artigo 17
+   * `Outros votos` é um agregado da fonte — reúne abstenção, obstrução e artigo 17
    * sem separá-los. A quebra exata por valor só existe nos votos individuais,
    * carregados sob demanda ao abrir os detalhes. A interface precisa dizer
-   * isso: tratar `Outros` como se fosse um valor de voto da fonte seria
+   * isso: tratar `Outros votos` como se fosse um valor de voto da fonte seria
    * inventar uma categoria (PRD §8.1).
    */
   tally: Array<{ value: string; count: number }>;

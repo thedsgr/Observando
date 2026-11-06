@@ -1,5 +1,5 @@
 import { VoteMarker } from "@/components/ui/marker";
-import { voteStyle } from "@/lib/vote-style";
+import { OTHER_VOTES, voteStyle } from "@/lib/vote-style";
 
 export type Tally = { value: string; count: number };
 
@@ -61,7 +61,7 @@ export function VoteLegend({ tally }: { tally: Tally[] }) {
     <ul className="flex flex-wrap items-center gap-x-4 gap-y-1.5">
       {tally.map((entry) => {
         const { color, marker } = voteStyle(entry.value);
-        const aggregate = entry.value === "Outros";
+        const aggregate = entry.value === OTHER_VOTES;
         return (
           <li
             key={entry.value}

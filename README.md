@@ -282,7 +282,3 @@ categoria mais parecida.
    `npm run segredo:envio`. Se o endereço do site mudar, é preciso reagendar
    o job `observa-enviar` com a URL nova. Enquanto o item 1 não for feito,
    tudo isso funciona, mas só chega e-mail para a conta do Resend.
-3. **Nome "Outros" aparece em dois sentidos.** É a categoria de tema e
-   também o balde de votos da fonte (abstenção, obstrução, artigo 17) na
-   contagem de cada votação. A tela distingue pelo lugar, mas vale renomear
-   um dos dois.
