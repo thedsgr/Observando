@@ -212,6 +212,9 @@ function StepDone({
     );
   }
 
+  // A cópia daqui serve a três casos — endereço novo, endereço pendente e
+  // endereço já confirmado — porque a API não diz qual foi. Dizer revelaria
+  // quem usa o Observa a quem digitasse um e-mail alheio.
   const inscrito = outcome.status === "inscrito";
 
   return (
@@ -223,15 +226,16 @@ function StepDone({
       {inscrito && outcome.emailSent && (
         <p className="mt-3 text-[15px] leading-relaxed text-text-muted">
           Enviamos um link de confirmação para{" "}
-          <span className="text-text">{email}</span>. Os avisos começam depois
-          que você clicar nele — é esse clique que autoriza o envio.
+          <span className="text-text">{email}</span>. Suas escolhas passam a
+          valer quando você clicar nele — é o clique que autoriza, não este
+          botão.
         </p>
       )}
 
       {inscrito && !outcome.emailSent && (
         <>
           <p className="mt-3 text-[15px] leading-relaxed text-text-muted">
-            Sua inscrição foi gravada com <span className="text-text">{email}</span>.
+            Registramos seu pedido para <span className="text-text">{email}</span>.
           </p>
           <p className="mt-3 rounded-lg border border-dashed border-flag/50 px-4 py-3 text-[13px] leading-relaxed text-flag">
             O envio de e-mail ainda não está configurado neste ambiente, então

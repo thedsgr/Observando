@@ -6,9 +6,9 @@ fonte oficial. Ver `docs/prd.md` para a proposta de produto completa.
 
 > **Fase 3 (atual).** Onboarding e acompanhamento personalizado. A pessoa
 > escolhe parlamentares, temas e frequência, e a home passa a refletir essa
-> configuração. O banco existe e as migrações foram aplicadas; falta **a chave
-> de serviço no ambiente** para a inscrição sair do navegador, e um provedor
-> de e-mail para as mensagens saírem.
+> configuração. O banco está de pé com os 513 deputados, e a inscrição grava e
+> confirma pelo link mágico; falta **um provedor de e-mail** para as mensagens
+> saírem.
 >
 > Escopo do MVP: **Câmara dos Deputados e e-mail**. Senado, SMS e WhatsApp
 > entram depois, e o modelo de dados já os prevê.
@@ -32,7 +32,7 @@ npm run sync:deputados
 
 Sem isso a inscrição falha de propósito: `subscriber_legislators` referencia
 `legislators`, e gravar metade faria a pessoa achar que acompanha alguém que o
-sistema não conhece.
+sistema não conhece. O script aborta se ler menos de 400 parlamentares.
 
 ## Rodar
 
@@ -145,6 +145,14 @@ fora da tabela não geram categoria: a votação fica sem tema até revisão.
 
 - **Sem conta e sem senha.** A identidade é um canal verificado (hoje só
   e-mail), com link mágico. Nunca existe tela de cadastro ou login.
+- **Mudar a inscrição de um e-mail confirmado exige o link.** Sem senha, o que
+  prova posse do endereço é o clique. Então um pedido para um endereço já
+  verificado não grava nada: a mudança fica em `magic_tokens.payload` e só vale
+  depois da confirmação. Sem isso, digitar o e-mail de outra pessoa reescreveria
+  quem ela acompanha, e reativaria quem cancelou. `opted_out_at` só é limpo na
+  confirmação, nunca no pedido.
+- **A resposta da inscrição é igual para endereço novo e já assinante.** Dizer
+  qual é o caso deixaria sondar quem usa o Observa.
 - **Nenhum tema marcado significa todos.** É o padrão de quem não quer
   escolher.
 - **Votação sem tema atribuído nunca é escondida por filtro de tema.** Omitir
@@ -156,12 +164,17 @@ fora da tabela não geram categoria: a votação fica sem tema até revisão.
 
 ## O que falta
 
-1. **`SUPABASE_SERVICE_ROLE_KEY` no ambiente** e `npm run sync:deputados`.
-   Enquanto não houver, a inscrição responde 503 e a interface diz que as
-   escolhas só valem naquele navegador — em vez de fingir que gravou.
-2. **Envio de e-mail** (Resend ou equivalente). O link mágico já é gerado e
+1. **Envio de e-mail** (Resend ou equivalente). O link mágico já é gerado e
    guardado como hash; falta a mensagem. Em desenvolvimento o link aparece no
-   log do servidor, nunca na resposta ao cliente.
-3. **Sincronizar votações para o banco**, com `dedup_key` nas notificações
+   log do servidor, nunca na resposta ao cliente. Sem provedor, a interface diz
+   que nenhuma mensagem foi enviada em vez de fingir que mandou.
+2. **Sincronizar votações para o banco**, com `dedup_key` nas notificações
    para não reenviar evento antigo como novo (PRD §8.3). Hoje as votações são
    lidas dos arquivos a cada revalidação, sem passar pelo banco.
+3. **Tela de preferências ligada ao banco.** Hoje `/preferencias` edita o
+   armazenamento do navegador. Ligá-la à inscrição confirmada pede um token de
+   `manage`, que o esquema já prevê mas ninguém emite ainda.
+4. **Token pendente de quem nunca confirmou não é invalidado** por um pedido
+   novo para o mesmo endereço. Não expõe nada de ninguém — o canal nunca foi
+   confirmado e nada é enviado antes disso — mas quem clicar num link antigo
+   confirma as escolhas do pedido mais recente, não as suas.

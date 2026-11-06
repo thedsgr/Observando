@@ -79,16 +79,15 @@ export async function POST(request: Request) {
       // fica no log do servidor para dar para testar a confirmação.
       if (process.env.NODE_ENV !== "production") {
         console.info(
-          `[observa] confirme em /confirmar?token=${result.verifyToken}`,
+          `[observa] ${result.purpose} em /confirmar?token=${result.token}`,
         );
       }
     }
 
-    return NextResponse.json({
-      ok: true,
-      emailSent: emailProviderConfigured,
-      alreadyVerified: result.alreadyVerified,
-    });
+    // A resposta é a mesma para endereço novo, endereço pendente e endereço já
+    // confirmado. Dizer qual é o caso deixaria sondar quem usa o Observa: era
+    // o que `alreadyVerified` fazia antes de sair daqui.
+    return NextResponse.json({ ok: true, emailSent: emailProviderConfigured });
   } catch (error) {
     const message = error instanceof Error ? error.message : "erro desconhecido";
     return NextResponse.json(
