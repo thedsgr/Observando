@@ -255,11 +255,14 @@ fora da tabela não geram categoria: a votação fica sem tema até revisão.
    teste (`onboarding@resend.dev`) só chega e-mail no endereço da própria conta
    Resend: para qualquer pessoa se inscrever, falta verificar um domínio e
    trocar `OBSERVA_EMAIL_FROM`.
-2. **Agendar.** A sincronização e o envio funcionam, mas rodam à mão. Falta o
-   agendamento: a sincronização uma vez por dia (os arquivos fecham no dia
-   anterior) e o envio a cada poucos minutos. E o envio só sai de fato com
-   conta no provedor, domínio verificado e `CRON_SECRET` e
-   `OBSERVA_UNSUBSCRIBE_SECRET` preenchidos.
+2. **Publicação e agendamento estão no ar, mas só entregam para você.** O
+   site está em https://observa-topaz.vercel.app (Vercel, ligado ao
+   repositório Observando: cada push publica). A sincronização roda pelo
+   GitHub Actions às 7h e às 19h; o envio, pelo `pg_cron` do Supabase a cada
+   5 minutos (migração 0009), com o `CRON_SECRET` guardado no Vault por
+   `npm run segredo:envio`. Se o endereço do site mudar, é preciso reagendar
+   o job `observa-enviar` com a URL nova. Enquanto o item 1 não for feito,
+   tudo isso funciona, mas só chega e-mail para a conta do Resend.
 3. **Votação sem categoria ainda passa por qualquer filtro de tema.** Com as
    13 categorias, sobram 3 das 159 nominais de 2026 sem categoria: duas sem
    tema oficial nenhum (PLP 77/2026, recente demais) e uma homenagem. Era 24
@@ -274,7 +277,6 @@ fora da tabela não geram categoria: a votação fica sem tema até revisão.
    novo para o mesmo endereço. Não expõe nada de ninguém — o canal nunca foi
    confirmado e nada é enviado antes disso — mas quem clicar num link antigo
    confirma as escolhas do pedido mais recente, não as suas.
-
 7. **Inscrição nunca confirmada fica guardada.** Não recebe nada, mas o
    endereço continua no banco depois que o link expira. Pela minimização da
    LGPD, deveria ser apagada sozinha alguns dias após a expiração.
