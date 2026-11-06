@@ -155,6 +155,47 @@ export function applyMessage(context: MessageContext): EmailMessage {
   };
 }
 
+/**
+ * Pedido de exclusão de dados.
+ *
+ * Diz exatamente o que deixa de existir, e que ignorar não muda nada: quem
+ * recebe sem ter pedido — alguém digitou o endereço dela — precisa saber que
+ * a inscrição continua como está.
+ */
+export function deletionMessage(context: {
+  to: string;
+  url: string;
+  ttlHours: number;
+}): EmailMessage {
+  const apagado =
+    "seu e-mail, os parlamentares e temas que você escolheu, a frequência e o histórico de avisos";
+  const text = [
+    "Pediram para apagar os seus dados do Observa.",
+    "",
+    `Se foi você, confirme neste link. Serão apagados ${apagado}:`,
+    context.url,
+    "",
+    `O link vale por ${context.ttlHours} horas. A exclusão não tem volta; para`,
+    "voltar a acompanhar alguém, é só se inscrever de novo.",
+    "",
+    "Se não foi você, ignore este e-mail. Nada é apagado sem esse clique.",
+  ].join("\n");
+
+  const html = wrap({
+    heading: "Confirme a exclusão dos seus dados",
+    body: [
+      '<p style="margin:0 0 12px">Pediram para apagar os seus dados do Observa.</p>',
+      `<p style="margin:0 0 16px">Se foi você, confirme no botão abaixo. Serão apagados ${apagado}.</p>`,
+      button(context.url, "Apagar meus dados"),
+      `<p style="margin:0 0 20px;font-size:13px;color:#666">O link vale por ${context.ttlHours} horas. `,
+      "A exclusão não tem volta; para voltar a acompanhar alguém, é só se inscrever de novo.</p>",
+      '<p style="margin:0;font-size:13px;color:#666">Se não foi você, ignore este e-mail. Nada é apagado sem esse clique.</p>',
+    ].join(""),
+  });
+
+  return { to: context.to, subject: "Confirme a exclusão dos seus dados", text, html };
+}
+
 /* =========================================================================
    Resumo de votações.
 

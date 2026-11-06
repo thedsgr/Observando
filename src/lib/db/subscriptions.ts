@@ -20,7 +20,7 @@ import type { TopicId } from "@/lib/types";
 
 type Db = ReturnType<typeof serviceDb>;
 
-type TokenPurpose = "verify" | "apply";
+type TokenPurpose = "verify" | "apply" | "delete";
 
 export type SubscriptionInput = {
   email: string;
@@ -278,6 +278,9 @@ export async function confirmToken(token: string): Promise<Confirmation> {
     .eq("token_hash", hashToken(token))
     .is("used_at", null)
     .gt("expires_at", now)
+    // Só confirmação e mudança. Um link de exclusão aberto aqui por engano
+    // não pode virar "inscrição confirmada" — nem consumir o link.
+    .in("purpose", ["verify", "apply"])
     .select("token_hash, subscriber_id, channel_id, purpose, payload")
     .maybeSingle();
 
@@ -317,4 +320,70 @@ export async function confirmToken(token: string): Promise<Confirmation> {
       .eq("token_hash", claimed.token_hash as string);
     throw error;
   }
+}
+
+/**
+ * Pedido de exclusão: emite um link para o endereço, se houver inscrição com
+ * ele. Devolve `null` quando não há — e quem chama responde igual nos dois
+ * casos, para a exclusão não virar um jeito de descobrir quem é assinante.
+ *
+ * Vale também para inscrição nunca confirmada: quem digitou o endereço e
+ * desistiu tem o mesmo direito de apagar, e o link prova a posse do mesmo
+ * jeito.
+ */
+export async function requestDeletion(
+  email: string,
+): Promise<{ token: string; address: string } | null> {
+  const db = serviceDb();
+  const address = normalizeEmail(email);
+  const { data: channel } = await db
+    .from("subscriber_channels")
+    .select("id, subscriber_id")
+    .eq("kind", "email")
+    .eq("address", address)
+    .maybeSingle();
+  if (!channel) return null;
+
+  const token = await issueToken(db, {
+    subscriberId: channel.subscriber_id as string,
+    channelId: channel.id as string,
+    purpose: "delete",
+    payload: null,
+  });
+  return { token, address };
+}
+
+/**
+ * Exclui de verdade: a linha do assinante e, em cascata, canais, escolhas,
+ * links e histórico de avisos. Não é `opted_out_at` — isso é parar de
+ * receber, e quem pediu exclusão pediu que os dados deixem de existir.
+ *
+ * O token é tomado no mesmo UPDATE condicionado dos outros links, então um
+ * duplo clique não tenta apagar duas vezes.
+ */
+export async function confirmDeletion(token: string): Promise<boolean> {
+  const db = serviceDb();
+  const now = new Date().toISOString();
+  const { data: claimed } = await db
+    .from("magic_tokens")
+    .update({ used_at: now })
+    .eq("token_hash", hashToken(token))
+    .is("used_at", null)
+    .gt("expires_at", now)
+    .eq("purpose", "delete")
+    .select("subscriber_id")
+    .maybeSingle();
+  if (!claimed) return false;
+
+  const { error } = await db
+    .from("subscribers")
+    .delete()
+    .eq("id", claimed.subscriber_id as string);
+  if (error) {
+    // A linha do token sobreviveu (a exclusão falhou), então dá para soltar
+    // a marca e o link continuar valendo.
+    await db.from("magic_tokens").update({ used_at: null }).eq("token_hash", hashToken(token));
+    throw new Error(`Falha ao excluir: ${error.message}`);
+  }
+  return true;
 }

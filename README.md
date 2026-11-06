@@ -238,15 +238,23 @@ fora da tabela não geram categoria: a votação fica sem tema até revisão.
   abrem todos os links de uma mensagem. O link do corpo leva a uma página com
   botão; o descadastro em um clique dos provedores (RFC 8058) chega por POST.
   Sair cancela também o que já estava na fila.
+- **Preferências e exclusão passam pelo link, como a inscrição.** Sem login, o
+  servidor não sabe quem está na tela de preferências: o e-mail ali é só o que
+  ficou num navegador. Salvar vale na hora para o navegador e, no servidor,
+  depois do clique no link (é o fluxo da inscrição). "Apagar meus dados" manda
+  um link; clicando, a inscrição é apagada de verdade — e-mail, escolhas,
+  links e histórico de avisos —, não só marcada como cancelada. Abrir o link
+  não apaga; a resposta do pedido é igual haja ou não inscrição.
 - **Voto com valor em branco é registro, não ausência.** A fonte tem 466 deles
   em 2026; comparações usam `!== undefined`, nunca truthiness.
 
 ## O que falta
 
-1. **Conta no provedor e domínio verificado.** O envio está implementado; sem
-   as três variáveis preenchidas nada sai, e a interface distingue "não está
-   configurado" de "o envio falhou" em vez de dizer que mandou. Em
-   desenvolvimento o link aparece no log do servidor, nunca na resposta.
+1. **Domínio verificado no Resend.** Conta e chave estão configuradas, e a
+   confirmação por e-mail foi testada de ponta a ponta. Mas com o remetente de
+   teste (`onboarding@resend.dev`) só chega e-mail no endereço da própria conta
+   Resend: para qualquer pessoa se inscrever, falta verificar um domínio e
+   trocar `OBSERVA_EMAIL_FROM`.
 2. **Agendar.** A sincronização e o envio funcionam, mas rodam à mão. Falta o
    agendamento: a sincronização uma vez por dia (os arquivos fecham no dia
    anterior) e o envio a cada poucos minutos. E o envio só sai de fato com
@@ -259,10 +267,14 @@ fora da tabela não geram categoria: a votação fica sem tema até revisão.
    Separar "tema fora das categorias" de "sem tema nenhum" fecharia o resto.
 4. **O painel ainda lê dos arquivos, não do banco.** Funciona, e o banco agora
    tem os mesmos dados; trocar a fonte é outro passo.
-5. **Tela de preferências ligada ao banco.** Hoje `/preferencias` edita o
-   armazenamento do navegador. Ligá-la à inscrição confirmada pede um token de
-   `manage`, que o esquema já prevê mas ninguém emite ainda.
+5. **Trocar o e-mail nas preferências inscreve o endereço novo, mas não
+   desfaz o antigo.** Desfazer exigiria provar posse do antigo também; hoje a
+   saída dele é pelo link de descadastro ou de exclusão.
 6. **Token pendente de quem nunca confirmou não é invalidado** por um pedido
    novo para o mesmo endereço. Não expõe nada de ninguém — o canal nunca foi
    confirmado e nada é enviado antes disso — mas quem clicar num link antigo
    confirma as escolhas do pedido mais recente, não as suas.
+
+7. **Inscrição nunca confirmada fica guardada.** Não recebe nada, mas o
+   endereço continua no banco depois que o link expira. Pela minimização da
+   LGPD, deveria ser apagada sozinha alguns dias após a expiração.

@@ -22,20 +22,71 @@ import type { Deputy, TopicId } from "@/lib/types";
  * Edição do acompanhamento: parlamentares, temas, e-mail, frequência e saída.
  *
  * O PRD §5.5 e §8.4 pedem que mudar e cancelar sejam simples. Por isso tudo
- * fica numa tela só, o cancelamento é explícito e não está escondido, e
- * nenhuma alteração exige confirmar senha — não existe senha.
+ * fica numa tela só, a exclusão é explícita e não está escondida, e nenhuma
+ * alteração exige senha — não existe senha.
+ *
+ * Mas também não existe login, então o servidor não sabe quem está aqui: o
+ * e-mail nesta tela é só o que ficou guardado neste navegador. Salvar e
+ * apagar valem na hora para o navegador, e no servidor só depois do clique no
+ * link enviado ao endereço. Agir direto pelo endereço deixaria qualquer um
+ * mudar ou apagar a inscrição de outra pessoa.
  */
+
+type Delivery = "enviado" | "sem-provedor" | "falhou";
+
+type SaveStatus =
+  | { kind: "enviando" }
+  | { kind: "pedido"; delivery: Delivery; email: string }
+  | { kind: "erro"; message: string };
+
+type DeletionStatus =
+  | { kind: "enviando" }
+  | { kind: "pedido"; email: string }
+  | { kind: "so-local" }
+  | { kind: "erro"; message: string };
+
 export function PreferencesEditor({ deputies }: { deputies: Deputy[] }) {
   const router = useRouter();
   const { preferences, hydrated } = usePreferences();
   const [draft, setDraft] = useState<Preferences | null>(null);
   const [query, setQuery] = useState("");
-  const [saved, setSaved] = useState(false);
+  const [saveStatus, setSaveStatus] = useState<SaveStatus | null>(null);
+  const [deletion, setDeletion] = useState<DeletionStatus | null>(null);
 
   // O rascunho nasce do que está guardado, na primeira renderização hidratada.
   const current = draft ?? preferences;
 
   if (!hydrated) return null;
+
+  // Depois de pedir a exclusão o navegador já foi limpo, então esta tela não
+  // tem mais o que editar: mostra só o desfecho.
+  if (deletion?.kind === "pedido" || deletion?.kind === "so-local") {
+    return (
+      <main className="mx-auto w-full max-w-2xl flex-1 px-4 py-16 sm:px-6">
+        <h1 className="font-serif text-2xl text-text">
+          {deletion.kind === "pedido" ? "Confira seu e-mail" : "Pronto"}
+        </h1>
+        <p className="mt-3 text-[15px] leading-relaxed text-text-muted">
+          {deletion.kind === "pedido" ? (
+            <>
+              Apagamos suas escolhas deste navegador. Se houver uma inscrição com{" "}
+              <span className="text-text">{deletion.email}</span>, enviamos para ele um
+              link: os dados no servidor só são apagados quando você clicar nele.
+            </>
+          ) : (
+            "Apagamos suas escolhas deste navegador. Não havia e-mail cadastrado, então não havia nada no servidor."
+          )}
+        </p>
+        <button
+          type="button"
+          onClick={() => router.push("/")}
+          className="mt-6 rounded-full bg-accent px-5 py-2 text-sm font-medium text-accent-contrast hover:bg-accent-hover"
+        >
+          Ir para o início
+        </button>
+      </main>
+    );
+  }
 
   if (!current) {
     return (
@@ -56,21 +107,80 @@ export function PreferencesEditor({ deputies }: { deputies: Deputy[] }) {
 
   function update(changes: Partial<Preferences>) {
     setDraft({ ...(current as Preferences), ...changes });
-    setSaved(false);
+    setSaveStatus(null);
   }
 
   const results = query ? searchDeputies(deputies, query).slice(0, 8) : [];
   const full = current.legislators.length >= MAX_LEGISLATORS;
   const emailValid = current.channel ? isValidEmail(current.channel.address) : false;
 
-  function save() {
-    savePreferences(current as Preferences);
-    setSaved(true);
+  /** Grava no navegador e pede ao servidor, pelo mesmo caminho da inscrição. */
+  async function save() {
+    const next = current as Preferences;
+    savePreferences(next);
+    const email = next.channel?.address ?? "";
+    setSaveStatus({ kind: "enviando" });
+    try {
+      const response = await fetch("/api/inscricao", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({
+          email,
+          frequency: next.frequency,
+          legislators: next.legislators,
+          topics: next.topics,
+        }),
+      });
+      const body = (await response.json()) as {
+        ok?: boolean;
+        delivery?: Delivery;
+        message?: string;
+      };
+      setSaveStatus(
+        response.ok && body.ok
+          ? { kind: "pedido", delivery: body.delivery ?? "sem-provedor", email }
+          : { kind: "erro", message: body.message ?? "O servidor não aceitou o pedido." },
+      );
+    } catch {
+      setSaveStatus({ kind: "erro", message: "Não foi possível falar com o servidor." });
+    }
   }
 
-  function stop() {
-    clearPreferences();
-    router.push("/");
+  /**
+   * Pede a exclusão. O navegador só é limpo depois que o link sai: se o envio
+   * falhar e o navegador já estiver limpo, o e-mail some desta tela e a pessoa
+   * fica sem ter como pedir de novo.
+   */
+  async function erase() {
+    const email = current?.channel?.address ?? "";
+    if (!isValidEmail(email)) {
+      clearPreferences();
+      setDeletion({ kind: "so-local" });
+      return;
+    }
+    setDeletion({ kind: "enviando" });
+    try {
+      const response = await fetch("/api/apagar", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ email }),
+      });
+      const body = (await response.json()) as { ok?: boolean; delivery?: Delivery };
+      if (response.ok && body.ok && body.delivery === "enviado") {
+        clearPreferences();
+        setDeletion({ kind: "pedido", email });
+      } else {
+        setDeletion({
+          kind: "erro",
+          message:
+            body.delivery === "sem-provedor"
+              ? "O envio de e-mail não está configurado, então o link para apagar os dados do servidor não pôde ser enviado. Nada foi apagado."
+              : "O e-mail com o link não saiu. Nada foi apagado; tente de novo em alguns minutos.",
+        });
+      }
+    } catch {
+      setDeletion({ kind: "erro", message: "Não foi possível falar com o servidor. Nada foi apagado." });
+    }
   }
 
   return (
@@ -277,17 +387,39 @@ export function PreferencesEditor({ deputies }: { deputies: Deputy[] }) {
           disabled={current.legislators.length === 0 || !emailValid}
           className="rounded-full bg-accent px-5 py-2 text-sm font-medium text-accent-contrast transition-colors hover:bg-accent-hover disabled:cursor-not-allowed disabled:opacity-40"
         >
-          Salvar
+          {saveStatus?.kind === "enviando" ? "Salvando…" : "Salvar"}
         </button>
-        {saved && <span className="text-[13px] text-status">Salvo.</span>}
         <button
           type="button"
-          onClick={stop}
-          className="ml-auto text-sm text-text-dim underline decoration-border-strong underline-offset-4 hover:text-flag"
+          onClick={erase}
+          disabled={deletion?.kind === "enviando"}
+          className="ml-auto text-sm text-text-dim underline decoration-border-strong underline-offset-4 hover:text-flag disabled:opacity-40"
         >
-          Parar de acompanhar e apagar meus dados
+          {deletion?.kind === "enviando" ? "Enviando link…" : "Apagar meus dados"}
         </button>
       </div>
+
+      {saveStatus && saveStatus.kind !== "enviando" && (
+        <p
+          className={[
+            "mt-4 text-[13px] leading-relaxed",
+            saveStatus.kind === "pedido" && saveStatus.delivery === "enviado"
+              ? "text-status"
+              : "text-flag",
+          ].join(" ")}
+        >
+          {saveStatus.kind === "erro"
+            ? `Salvo neste navegador, mas o servidor não aceitou: ${saveStatus.message}`
+            : saveStatus.delivery === "enviado"
+              ? `Salvo neste navegador. Para valer nos avisos, confirme pelo link que enviamos para ${saveStatus.email}. Até lá, nada muda nos avisos.`
+              : saveStatus.delivery === "sem-provedor"
+                ? "Salvo neste navegador. O envio de e-mail não está configurado, então a mudança ainda não chega aos avisos."
+                : "Salvo neste navegador, mas o e-mail de confirmação não saiu. Tente salvar de novo em alguns minutos."}
+        </p>
+      )}
+      {deletion?.kind === "erro" && (
+        <p className="mt-4 text-[13px] leading-relaxed text-flag">{deletion.message}</p>
+      )}
     </main>
   );
 }
