@@ -8,6 +8,7 @@ import {
   FREQUENCY_NOTE,
   MAX_LEGISLATORS,
   isValidEmail,
+  type FollowedLegislator,
   type Frequency,
   type Preferences,
 } from "@/lib/preferences";
@@ -101,13 +102,15 @@ export function Onboarding({ deputies }: { deputies: Deputy[] }) {
     savePreferences(draft);
   }
 
+  const done = outcome !== null;
+
   return (
-    <main className="mx-auto flex w-full max-w-2xl flex-1 flex-col px-4 py-10 sm:px-6 sm:py-16">
+    <main className="mx-auto flex w-full max-w-xl flex-1 flex-col px-4 py-10 sm:px-6 sm:py-16">
       <header>
         <p>
           <Logo />
         </p>
-        <h1 className="mt-5 font-serif text-3xl leading-tight text-text sm:text-4xl">
+        <h1 className="mt-6 font-serif text-3xl leading-tight text-text sm:text-4xl">
           Você votou neles. Agora acompanhe o que eles votam.
         </h1>
         <p className="mt-3 text-[15px] leading-relaxed text-text-muted">
@@ -116,33 +119,35 @@ export function Onboarding({ deputies }: { deputies: Deputy[] }) {
         </p>
       </header>
 
-      {/* Progresso */}
-      <ol className="mt-8 flex items-center gap-2" aria-label="Progresso">
-        {steps.map((label, index) => (
-          <li key={label} className="flex flex-1 items-center gap-2">
-            <span
+      {/* Progresso: o passo atual em texto, e uma barra por passo */}
+      <div className="mt-10">
+        <p className="flex items-baseline justify-between gap-3 text-[13px]">
+          <span className="text-text">{done ? "Pronto" : steps[step]}</span>
+          <span className="font-mono text-xs text-text-dim">
+            {done ? steps.length : step + 1} de {steps.length}
+          </span>
+        </p>
+        <ol className="mt-2.5 grid grid-cols-2 gap-1.5" aria-label="Progresso">
+          {steps.map((label, index) => (
+            <li
+              key={label}
+              aria-current={!done && index === step ? "step" : undefined}
               className={[
-                "h-1 flex-1 rounded-full transition-colors",
-                index <= step ? "bg-accent" : "bg-surface-3",
-              ].join(" ")}
-            />
-            <span
-              className={[
-                "shrink-0 text-xs",
-                index === step ? "text-accent" : "text-text-dim",
+                "h-1 rounded-full transition-colors",
+                done || index <= step ? "bg-accent" : "bg-surface-3",
               ].join(" ")}
             >
-              {label}
-            </span>
-          </li>
-        ))}
-      </ol>
+              <span className="sr-only">{label}</span>
+            </li>
+          ))}
+        </ol>
+      </div>
 
-      <div className="mt-8 flex-1">
+      <div className="mt-10 flex-1">
         {step === 0 && (
           <StepLegislators
             deputies={deputies}
-            selected={draft.legislators.map((item) => item.externalId)}
+            selected={draft.legislators}
             onToggle={(deputy) =>
               setDraft((current) => {
                 const exists = current.legislators.some(
@@ -196,6 +201,87 @@ export function Onboarding({ deputies }: { deputies: Deputy[] }) {
   );
 }
 
+/*
+ * Linguagem visual do onboarding, para as telas não divergirem entre si:
+ * - raio: caixa grande `rounded-panel`, campo e opção `rounded-lg`, ação e
+ *   chip `rounded-full` — o mesmo que o painel usa;
+ * - seleção: só a borda, o fundo e o indicador mudam; o texto não muda de
+ *   cor. Indicador quadrado para escolha múltipla, redondo para escolha única;
+ * - tipo: 20 para a pergunta, 15 para o corpo, 13 para o apoio.
+ */
+
+const PRIMARY_BUTTON =
+  "rounded-full bg-accent px-5 py-2.5 text-sm font-medium text-accent-contrast transition-colors hover:bg-accent-hover disabled:cursor-not-allowed disabled:bg-surface-3 disabled:text-text-dim";
+
+const OPTION_BASE =
+  "flex w-full items-start gap-3 rounded-lg border px-4 py-3.5 text-left transition-colors";
+
+function optionState(picked: boolean): string {
+  return picked
+    ? "border-accent/50 bg-accent/10"
+    : "border-border-subtle bg-surface hover:border-border-strong";
+}
+
+function StepHeading({ title, lede }: { title: string; lede: React.ReactNode }) {
+  return (
+    <>
+      <h2 className="text-xl font-medium leading-snug text-text">{title}</h2>
+      <p className="mt-1.5 text-[15px] leading-relaxed text-text-muted">{lede}</p>
+    </>
+  );
+}
+
+/** Marca de seleção. Quadrada para múltipla escolha, redonda para única. */
+function Indicator({ picked, shape }: { picked: boolean; shape: "check" | "radio" }) {
+  return (
+    <span
+      aria-hidden
+      className={[
+        "mt-0.5 flex size-[18px] shrink-0 items-center justify-center border transition-colors",
+        shape === "check" ? "rounded-md" : "rounded-full",
+        picked ? "border-accent bg-accent" : "border-border-strong bg-transparent",
+      ].join(" ")}
+    >
+      {picked &&
+        (shape === "check" ? (
+          <svg viewBox="0 0 12 12" className="size-3 text-accent-contrast" fill="none">
+            <path
+              d="M2.5 6.2 5 8.5l4.5-5"
+              stroke="currentColor"
+              strokeWidth="1.8"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            />
+          </svg>
+        ) : (
+          <span className="size-1.5 rounded-full bg-accent-contrast" />
+        ))}
+    </span>
+  );
+}
+
+/** Aviso que não é erro: expectativa, consentimento, estado do envio. */
+function Note({
+  children,
+  tone = "neutral",
+}: {
+  children: React.ReactNode;
+  tone?: "neutral" | "flag";
+}) {
+  return (
+    <p
+      className={[
+        "rounded-lg border px-4 py-3 text-[13px] leading-relaxed",
+        tone === "flag"
+          ? "border-dashed border-flag/50 text-flag"
+          : "border-border-subtle bg-surface text-text-muted",
+      ].join(" ")}
+    >
+      {children}
+    </p>
+  );
+}
+
 function StepDone({
   outcome,
   email,
@@ -208,7 +294,10 @@ function StepDone({
   if (outcome.status === "enviando") {
     return (
       <section aria-busy="true">
-        <h2 className="text-xl text-text">Guardando suas escolhas…</h2>
+        <StepHeading
+          title="Guardando suas escolhas…"
+          lede="Isso leva só um instante."
+        />
       </section>
     );
   }
@@ -221,60 +310,57 @@ function StepDone({
 
   return (
     <section>
-      <h2 className="text-xl text-text">
-        {!inscrito
-          ? "Suas escolhas valem neste navegador"
-          : delivery === "enviado"
-            ? "Confirme no seu e-mail"
-            : "Pedido registrado"}
-      </h2>
-
       {delivery === "enviado" && (
-        <p className="mt-3 text-[15px] leading-relaxed text-text-muted">
-          Enviamos um link de confirmação para{" "}
-          <span className="text-text">{email}</span>. Suas escolhas passam a
-          valer quando você clicar nele — é o clique que autoriza, não este
-          botão.
-        </p>
+        <StepHeading
+          title="Confirme no seu e-mail"
+          lede={
+            <>
+              Enviamos um link de confirmação para{" "}
+              <span className="text-text">{email}</span>. Suas escolhas passam a
+              valer quando você clicar nele — é o clique que autoriza, não este
+              botão.
+            </>
+          }
+        />
       )}
 
       {inscrito && delivery !== "enviado" && (
         <>
-          <p className="mt-3 text-[15px] leading-relaxed text-text-muted">
-            Registramos seu pedido para <span className="text-text">{email}</span>.
-          </p>
-          <p className="mt-3 rounded-lg border border-dashed border-flag/50 px-4 py-3 text-[13px] leading-relaxed text-flag">
-            {delivery === "sem-provedor"
-              ? `O envio de e-mail ainda não está configurado neste ambiente, então
-                 nenhuma mensagem foi enviada e nenhuma será até isso mudar.
-                 Preferimos dizer isso a deixar você esperando um e-mail que não vem.`
-              : `O e-mail de confirmação não saiu: o envio falhou. Seu pedido está
-                 guardado, então tente de novo em alguns minutos. Nada é enviado
-                 enquanto você não confirmar.`}
-          </p>
+          <StepHeading
+            title="Pedido registrado"
+            lede={
+              <>
+                Registramos seu pedido para <span className="text-text">{email}</span>.
+              </>
+            }
+          />
+          <div className="mt-5">
+            <Note tone="flag">
+              {delivery === "sem-provedor"
+                ? `O envio de e-mail ainda não está configurado neste ambiente, então
+                   nenhuma mensagem foi enviada e nenhuma será até isso mudar.
+                   Preferimos dizer isso a deixar você esperando um e-mail que não vem.`
+                : `O e-mail de confirmação não saiu: o envio falhou. Seu pedido está
+                   guardado, então tente de novo em alguns minutos. Nada é enviado
+                   enquanto você não confirmar.`}
+            </Note>
+          </div>
         </>
       )}
 
       {!inscrito && (
         <>
-          <p className="mt-3 text-[15px] leading-relaxed text-text-muted">
-            Você pode usar o painel normalmente, mas as escolhas ficam só neste
-            navegador — some se você trocar de aparelho ou limpar os dados do
-            site, e nenhum aviso será enviado.
-          </p>
-          <p className="mt-3 rounded-lg border border-dashed border-flag/50 px-4 py-3 text-[13px] leading-relaxed text-flag">
-            {outcome.status === "so-local" && outcome.reason}
-          </p>
+          <StepHeading
+            title="Suas escolhas valem neste navegador"
+            lede="Você pode usar o painel normalmente, mas as escolhas ficam só neste navegador — somem se você trocar de aparelho ou limpar os dados do site, e nenhum aviso será enviado."
+          />
+          <div className="mt-5">
+            <Note tone="flag">{outcome.status === "so-local" && outcome.reason}</Note>
+          </div>
         </>
       )}
 
-      <button
-        type="button"
-        onClick={onEnter}
-        className="mt-7 rounded-full bg-accent px-5 py-2 text-sm font-medium text-accent-contrast transition-colors hover:bg-accent-hover"
-      >
-        Ir para o meu painel
-      </button>
+      <Footer onNext={onEnter} nextLabel="Ir para o meu painel" />
     </section>
   );
 }
@@ -286,7 +372,7 @@ function StepLegislators({
   onNext,
 }: {
   deputies: Deputy[];
-  selected: number[];
+  selected: FollowedLegislator[];
   onToggle: (deputy: Deputy) => void;
   onNext: () => void;
 }) {
@@ -295,79 +381,111 @@ function StepLegislators({
     () => searchDeputies(deputies, query).slice(0, 40),
     [deputies, query],
   );
+  const selectedIds = selected.map((item) => item.externalId);
   const full = selected.length >= MAX_LEGISLATORS;
 
   return (
     <section>
-      <h2 className="text-xl text-text">Quem você quer acompanhar?</h2>
-      <p className="mt-2 text-[15px] leading-relaxed text-text-muted">
-        Busque pelo nome do deputado federal. Pode escolher até{" "}
-        {MAX_LEGISLATORS}.
-      </p>
-
-      <input
-        type="text"
-        value={query}
-        onChange={(event) => setQuery(event.target.value)}
-        placeholder="Digite o nome, o partido ou o estado"
-        className="mt-5 w-full rounded-full border border-border-strong bg-surface px-5 py-3 text-[15px] text-text outline-none placeholder:text-text-dim focus:border-accent"
+      <StepHeading
+        title="Quem você quer acompanhar?"
+        lede={`Busque pelo nome do deputado federal. Pode escolher até ${MAX_LEGISLATORS}.`}
       />
 
+      {/* Escolhidos ficam à vista mesmo quando a busca os tira da lista */}
       {selected.length > 0 && (
-        <p className="mt-4 text-[13px] text-text-dim">
-          {selected.length} de {MAX_LEGISLATORS} escolhidos
-          {full && " — limite atingido, remova alguém para trocar"}
-        </p>
+        <div className="mt-6">
+          <p className="flex items-baseline justify-between gap-3 text-[13px] text-text-muted">
+            <span>Escolhidos</span>
+            <span className="font-mono text-xs text-text-dim">
+              {selected.length} de {MAX_LEGISLATORS}
+            </span>
+          </p>
+          <ul className="mt-2 flex flex-wrap gap-2">
+            {selected.map((item) => {
+              const deputy = deputies.find((candidate) => candidate.id === item.externalId);
+              return (
+                <li key={item.externalId}>
+                  <button
+                    type="button"
+                    onClick={() => deputy && onToggle(deputy)}
+                    aria-label={`Remover ${item.name}`}
+                    className="flex items-center gap-1.5 rounded-full border border-accent/50 bg-accent/10 py-1 pl-3 pr-2 text-[13px] text-text transition-colors hover:border-accent"
+                  >
+                    {item.name}
+                    <span aria-hidden className="text-text-dim">
+                      ×
+                    </span>
+                  </button>
+                </li>
+              );
+            })}
+          </ul>
+        </div>
       )}
 
-      <ul className="mt-4 max-h-[22rem] space-y-1.5 overflow-y-auto pr-1">
-        {results.map((deputy) => {
-          const picked = selected.includes(deputy.id);
-          const disabled = full && !picked;
-          return (
-            <li key={deputy.id}>
-              <button
-                type="button"
-                onClick={() => onToggle(deputy)}
-                disabled={disabled}
-                aria-pressed={picked}
-                className={[
-                  "flex w-full items-center gap-3 rounded-lg border px-4 py-3 text-left transition-colors",
-                  picked
-                    ? "border-accent/50 bg-accent/10"
-                    : "border-border-subtle bg-surface hover:border-border-strong",
-                  disabled ? "cursor-not-allowed opacity-40" : "",
-                ].join(" ")}
-              >
-                <span
-                  aria-hidden
+      {/* Busca e resultados numa caixa só, como a busca do painel */}
+      <div className="mt-6 overflow-hidden rounded-panel border border-border-subtle bg-surface focus-within:border-border-strong">
+        <div className="flex items-center gap-3 border-b border-border-subtle px-4">
+          <svg
+            aria-hidden
+            viewBox="0 0 16 16"
+            className="size-4 shrink-0 text-text-dim"
+            fill="none"
+          >
+            <circle cx="7" cy="7" r="4.75" stroke="currentColor" strokeWidth="1.5" />
+            <path d="m10.5 10.5 3 3" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
+          </svg>
+          <input
+            type="text"
+            value={query}
+            onChange={(event) => setQuery(event.target.value)}
+            placeholder="Nome, partido ou estado"
+            aria-label="Buscar deputado"
+            className="w-full bg-transparent py-3.5 text-[15px] text-text outline-none placeholder:text-text-dim"
+          />
+        </div>
+
+        <ul className="max-h-[20rem] overflow-y-auto">
+          {results.map((deputy) => {
+            const picked = selectedIds.includes(deputy.id);
+            const disabled = full && !picked;
+            return (
+              <li key={deputy.id} className="border-b border-border-subtle last:border-b-0">
+                <button
+                  type="button"
+                  onClick={() => onToggle(deputy)}
+                  disabled={disabled}
+                  aria-pressed={picked}
                   className={[
-                    "flex size-5 shrink-0 items-center justify-center rounded-full border text-[11px]",
-                    picked
-                      ? "border-accent bg-accent text-accent-contrast"
-                      : "border-border-strong text-transparent",
+                    "flex w-full items-center gap-3 px-4 py-3 text-left transition-colors",
+                    picked ? "bg-accent/10" : "hover:bg-surface-2",
+                    disabled ? "cursor-not-allowed opacity-40" : "",
                   ].join(" ")}
                 >
-                  ✓
-                </span>
-                <span className="min-w-0 flex-1">
-                  <span className="block truncate text-[15px] text-text">
+                  <Indicator picked={picked} shape="check" />
+                  <span className="min-w-0 flex-1 truncate text-[15px] text-text">
                     {deputy.name}
                   </span>
-                  <span className="block truncate font-mono text-xs text-text-dim">
+                  <span className="shrink-0 font-mono text-xs text-text-dim">
                     {deputyCaption(deputy.party, deputy.uf)}
                   </span>
-                </span>
-              </button>
+                </button>
+              </li>
+            );
+          })}
+          {results.length === 0 && (
+            <li className="px-4 py-10 text-center text-[13px] text-text-muted">
+              Nenhum deputado encontrado para “{query}”.
             </li>
-          );
-        })}
-        {results.length === 0 && (
-          <li className="py-10 text-center text-sm text-text-muted">
-            Nenhum deputado encontrado para “{query}”.
-          </li>
-        )}
-      </ul>
+          )}
+        </ul>
+      </div>
+
+      {full && (
+        <p className="mt-3 text-[13px] text-text-dim">
+          Limite atingido. Remova alguém para trocar.
+        </p>
+      )}
 
       <Footer
         onNext={onNext}
@@ -397,12 +515,12 @@ function StepChannel({
 
   return (
     <section>
-      <h2 className="text-xl text-text">Como você quer ser avisado?</h2>
-      <p className="mt-2 text-[15px] leading-relaxed text-text-muted">
-        Por enquanto o Observando avisa por e-mail. SMS e WhatsApp vêm depois.
-      </p>
+      <StepHeading
+        title="Como você quer ser avisado?"
+        lede="Por enquanto o Observando avisa por e-mail. SMS e WhatsApp vêm depois."
+      />
 
-      <label className="mt-5 block">
+      <label className="mt-6 block">
         <span className="text-[13px] text-text-muted">Seu e-mail</span>
         <input
           type="email"
@@ -414,12 +532,12 @@ function StepChannel({
           placeholder="voce@exemplo.com"
           aria-invalid={showError}
           className={[
-            "mt-1.5 w-full rounded-full border bg-surface px-5 py-3 text-[15px] text-text outline-none placeholder:text-text-dim",
+            "mt-2 w-full rounded-lg border bg-surface px-4 py-3 text-[15px] text-text outline-none transition-colors placeholder:text-text-dim",
             showError ? "border-flag" : "border-border-strong focus:border-accent",
           ].join(" ")}
         />
         {showError && (
-          <span className="mt-1.5 block text-[13px] text-flag">
+          <span className="mt-2 block text-[13px] text-flag">
             Esse e-mail não parece válido.
           </span>
         )}
@@ -427,32 +545,26 @@ function StepChannel({
 
       <fieldset className="mt-6">
         <legend className="text-[13px] text-text-muted">Com que frequência</legend>
-        <div className="mt-2 space-y-2">
+        <div className="mt-2 space-y-2" role="radiogroup">
           {(Object.keys(FREQUENCY_LABEL) as Frequency[]).map((option) => {
             const picked = frequency === option;
             return (
               <button
                 key={option}
                 type="button"
+                role="radio"
+                aria-checked={picked}
                 onClick={() => setFrequency(option)}
-                aria-pressed={picked}
-                className={[
-                  "w-full rounded-lg border px-4 py-3 text-left transition-colors",
-                  picked
-                    ? "border-accent/50 bg-accent/10"
-                    : "border-border-subtle bg-surface hover:border-border-strong",
-                ].join(" ")}
+                className={[OPTION_BASE, optionState(picked)].join(" ")}
               >
-                <span
-                  className={[
-                    "block text-[15px]",
-                    picked ? "text-accent" : "text-text",
-                  ].join(" ")}
-                >
-                  {FREQUENCY_LABEL[option]}
-                </span>
-                <span className="mt-0.5 block text-[13px] text-text-dim">
-                  {FREQUENCY_NOTE[option]}
+                <Indicator picked={picked} shape="radio" />
+                <span className="min-w-0 flex-1">
+                  <span className="block text-[15px] text-text">
+                    {FREQUENCY_LABEL[option]}
+                  </span>
+                  <span className="mt-0.5 block text-[13px] leading-relaxed text-text-dim">
+                    {FREQUENCY_NOTE[option]}
+                  </span>
                 </span>
               </button>
             );
@@ -461,13 +573,15 @@ function StepChannel({
       </fieldset>
 
       {/* Expectativa realista: votação com voto nominal é rara (2% em 2026). */}
-      <p className="mt-5 rounded-lg border border-border-subtle bg-surface-2/60 px-4 py-3 text-[13px] leading-relaxed text-text-muted">
-        A Câmara só registra o voto de cada parlamentar em parte das votações —
-        cerca de uma a cada cinquenta. Na prática, isso dá algo em torno de doze
-        votações por mês para cada parlamentar que você acompanha.
-      </p>
+      <div className="mt-6">
+        <Note>
+          A Câmara só registra o voto de cada parlamentar em parte das votações —
+          cerca de uma a cada cinquenta. Na prática, isso dá algo em torno de doze
+          votações por mês para cada parlamentar que você acompanha.
+        </Note>
+      </div>
 
-      <p className="mt-4 text-[12px] leading-relaxed text-text-dim">
+      <p className="mt-4 text-[13px] leading-relaxed text-text-dim">
         Ao continuar, você concorda em receber esses avisos no e-mail informado.
         Todo e-mail tem link para cancelar, e você pode mudar ou apagar suas
         escolhas a qualquer momento.
@@ -478,12 +592,13 @@ function StepChannel({
         onNext={() => onFinish(email, frequency)}
         nextLabel={`Acompanhar ${legislatorCount} parlamentar${legislatorCount > 1 ? "es" : ""}`}
         nextDisabled={!valid}
-        hint={!valid ? "Informe um e-mail para receber os avisos" : undefined}
+        hint={!valid ? "Informe um e-mail para continuar" : undefined}
       />
     </section>
   );
 }
 
+/** Rodapé dos passos: voltar à esquerda, ação principal à direita. */
 function Footer({
   onBack,
   onNext,
@@ -498,25 +613,22 @@ function Footer({
   hint?: string;
 }) {
   return (
-    <div className="mt-8 flex flex-wrap items-center gap-3 border-t border-border-subtle pt-5">
+    <div className="mt-10 flex flex-wrap items-center gap-x-4 gap-y-3 border-t border-border-subtle pt-6">
       {onBack && (
         <button
           type="button"
           onClick={onBack}
-          className="rounded-full border border-border-strong px-4 py-2 text-sm text-text-muted hover:border-border-strong hover:text-text"
+          className="rounded-full px-1 py-2.5 text-sm text-text-muted transition-colors hover:text-text"
         >
-          Voltar
+          ← Voltar
         </button>
       )}
-      <button
-        type="button"
-        onClick={onNext}
-        disabled={nextDisabled}
-        className="rounded-full bg-accent px-5 py-2 text-sm font-medium text-accent-contrast transition-colors hover:bg-accent-hover disabled:cursor-not-allowed disabled:opacity-40"
-      >
-        {nextLabel}
-      </button>
-      {hint && <span className="text-[13px] text-text-dim">{hint}</span>}
+      <div className="ml-auto flex flex-wrap items-center justify-end gap-x-4 gap-y-2">
+        {hint && <span className="text-[13px] text-text-dim">{hint}</span>}
+        <button type="button" onClick={onNext} disabled={nextDisabled} className={PRIMARY_BUTTON}>
+          {nextLabel}
+        </button>
+      </div>
     </div>
   );
 }
